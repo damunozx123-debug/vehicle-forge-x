@@ -44,7 +44,7 @@ jobs:
           SDKMANAGER=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --install 'platforms;android-37' 'build-tools;37.0.0'
+          "$SDKMANAGER" --install 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Android tests and build
         run: ./gradlew testDebugUnitTest assembleDebug --stacktrace
       - name: Upload debug APK
