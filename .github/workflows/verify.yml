@@ -1,0 +1,49 @@
+name: Android and protocol checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-core:
+    name: Protocol JVM smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install official Kotlin CLI compiler
+        run: |
+          curl --fail --location --retry 3 -o kotlin.zip \
+            https://github.com/JetBrains/kotlin/releases/download/v2.3.21/kotlin-compiler-2.3.21.zip
+          unzip -q kotlin.zip -d "$RUNNER_TEMP/kotlin-cli"
+          echo "$RUNNER_TEMP/kotlin-cli/kotlinc/bin" >> "$GITHUB_PATH"
+      - name: Execute isolated protocol tests
+        run: ./TEST_CORE.sh
+
+  android-debug:
+    name: Android debug build and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager --install 'platforms;android-37' 'build-tools;37.0.0'
+      - name: Android tests and build
+        run: ./gradlew testDebugUnitTest assembleDebug --stacktrace
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bmw-forge-x-debug-unsigned
+          path: app/build/outputs/apk/debug/app-debug.apk

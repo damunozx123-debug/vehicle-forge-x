@@ -1,0 +1,28 @@
+import com.dan.bmwforgex.core.*
+fun main() {
+    fun assertTest(name: String, ok: Boolean) { if (!ok) error("FAIL $name"); println("PASS $name") }
+    assertTest("rpm spaced", Sensors.byPid.getValue(0x0C).decode("41 0C 1A F8\r>") == 1726.0)
+    assertTest("rpm compact", Sensors.byPid.getValue(0x0C).decode("010C\r410C1AF8\r>") == 1726.0)
+    assertTest("rpm header", Sensors.byPid.getValue(0x0C).decode("7E8 04 41 0C 1A F8\r>") == 1726.0)
+    assertTest("coolant", Sensors.byPid.getValue(0x05).decode("41 05 7B") == 83.0)
+    assertTest("voltage", Sensors.byPid.getValue(0x42).decode("41423798") == 14.232)
+    assertTest("readiness", ObdCore.readiness("41 01 81 07 00 00")?.let { it.mil && it.storedCount==1 } == true)
+    assertTest("dtcs", ObdCore.dtcs("43 01 33 03 01 00 00") == listOf("P0133","P0301"))
+    assertTest("dtc network", ObdCore.dtcs("47 C1 23", 7) == listOf("U0123"))
+    assertTest("pids", ObdCore.supportedPids("41 00 80 00 00 01",0) == setOf(1,32))
+    assertTest("vin",ObdCore.vin("49 02 01 57 42 41 46 57 31 31 43 30 44 45 30 30 30 30 31 32")?.length == 17)
+    assertTest("knowledge",FaultKnowledge.forCode("P0299").firstChecks.contains("charge pipes"))
+    assertTest("multi-ECU DTC", ObdCore.dtcs("7E8 05 43 01 33 00 00\r7E9 05 43 03 01 00 00\r>") == listOf("P0133", "P0301"))
+    assertTest("optional oil",Sensors.byPid.getValue(0x5C).decode("415C78") == 80.0)
+    assertTest("pressure",Sensors.byPid.getValue(0x23).decode("41 23 12 34") == 46600.0)
+    assertTest("no data",Sensors.byPid.getValue(0x0C).decode("NO DATA\r>") == null)
+    assertTest("VIN requires 17",ObdCore.vin("49 02 01 57 42") == null)
+    assertTest("overheat insight",Insights.from(mapOf(0x05 to 118.0)).any { it.level=="Urgent" })
+    assertTest("fuel trim insight",Insights.from(mapOf(0x06 to 11.0,0x07 to 9.0)).any { it.label.contains("fuel") })
+    assertTest("false alarm absent",Insights.from(mapOf(0x05 to 82.0,0x42 to 14.2)).none { it.level=="Urgent" })
+    assertTest("freeze frame", FreezeFrame.decode("42 0C 00 1A F8",0x0C) == 1726.0)
+    assertTest("freeze invalid frame", FreezeFrame.decode("42 0C 01 1A F8",0x0C) == null)
+    assertTest("segmented VIN", ObdCore.vin("7E8 10 14 49 02 01 57 42\r7E8 21 41 46 57 31 31 43 30\r7E8 22 44 45 30 30 30 30 31 32\r>") == "WBAFW11C0DE000012")
+    assertTest("ELM numbered VIN",ObdCore.vin("0: 49 02 01 57 42\r1: 41 46 57 31 31 43 30\r2: 44 45 30 30 30 30 31 32\r>") == "WBAFW11C0DE000012")
+    println("23 protocol and reasoning tests completed")
+}
