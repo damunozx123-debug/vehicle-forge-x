@@ -106,11 +106,12 @@ private fun ForgeApp(vm: ForgeViewModel, export: () -> Unit) {
                 0 -> Dashboard(ui, vm, export)
                 1 -> Diagnostics(ui, vm)
                 2 -> Garage(ui, vm)
+                3 -> CodingWorkspace(ui)
                 else -> Engineering(ui, vm)
             }
         }
         NavigationBar(containerColor = Surface, contentColor = TextMain) {
-            listOf("◉" to "Live", "⚠" to "Faults", "▣" to "Garage", "⌘" to "Lab").forEachIndexed { i, entry ->
+            listOf("◉" to "Live", "⚠" to "Faults", "▣" to "Garage", "◇" to "Coding", "⌘" to "Lab").forEachIndexed { i, entry ->
                 NavigationBarItem(selected = i == tab, onClick = { tab = i },
                     icon = { Text(entry.first, fontSize = 21.sp) }, label = { Text(entry.second) },
                     colors = NavigationBarItemDefaults.colors(selectedIconColor = Aqua,
@@ -515,4 +516,68 @@ private fun Engineering(ui: ForgeState, vm: ForgeViewModel) {
 @Composable private fun ForgeInput(label: String, value: String, onChange: (String) -> Unit) {
     OutlinedTextField(value=value,onValueChange=onChange,modifier=Modifier.fillMaxWidth(),
         label={Text(label,fontSize=12.sp)},singleLine=true)
+}
+
+/** Offline coding plan. Does not perform ECU writes. */
+@Composable
+private fun CodingWorkspace(ui: ForgeState) {
+    var selectedId by remember { mutableStateOf(F10CodingCatalog.features.first().id) }
+    val feature = F10CodingCatalog.features.first { it.id == selectedId }
+    var chosen by remember(selectedId) { mutableStateOf(feature.choices.first()) }
+    var checked by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle("BMW F10 CODING", "Feature selection · BMW-specific ECU programming roadmap")
+        Banner("NO VEHICLE WRITES. Feature labels are real, but byte-level CAFD mappings are not verified.", Amber)
+        Panel {
+            Text("TRANSPORT READINESS", color = Aqua, fontWeight = FontWeight.Bold)
+            Text("Adapter: " + ui.name, fontSize = 12.sp)
+            Text("Session: " + (if (ui.simulator) "SIMULATOR" else ui.state), fontSize = 12.sp)
+            Text("Vehicle VIN: " + ui.vin.ifBlank { "Not read yet" }, fontSize = 12.sp)
+            Text("BMW coding-data read: NOT AVAILABLE", color = Amber, fontSize = 12.sp)
+            Text("BMW coding-data write: LOCKED", color = Amber, fontSize = 12.sp)
+        }
+        SectionTitle("F10 CONFIGURATION CATALOG", "Select a feature and desired value")
+        F10CodingCatalog.features.forEach { candidate ->
+            val active = candidate.id == selectedId
+            Column(Modifier.fillMaxWidth()
+                .background(if (active) Surface2 else Surface, RoundedCornerShape(12.dp))
+                .clickable { selectedId = candidate.id; checked = false }.padding(12.dp)) {
+                Text((if (active) "◉ " else "○ ") + candidate.name,
+                    fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("ECU: " + candidate.controlUnits.joinToString(" / "),
+                    color = Aqua, fontSize = 11.sp)
+                if (active) {
+                    Text(candidate.explanation, color = SubText, fontSize = 12.sp)
+                    Text("Needs: " + candidate.requirements, color = Amber, fontSize = 11.sp)
+                }
+            }
+        }
+        Panel {
+            Text("CHANGE PREVIEW", fontWeight = FontWeight.Bold, color = Aqua)
+            Text(feature.name, fontWeight = FontWeight.Bold)
+            Text("Desired value:", color = SubText, fontSize = 12.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                feature.choices.forEach { option ->
+                    FilterChip(selected = chosen == option,
+                        onClick = { chosen = option; checked = false },
+                        label = { Text(option, fontSize = 11.sp) })
+                }
+            }
+            Text("Requested: " + chosen, color = Lime, fontSize = 12.sp)
+            Text("Current coding value: UNKNOWN (no CAFD/NCD backup)",
+                color = SubText, fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+            Action("Check coding readiness", Modifier.fillMaxWidth(), primary = true) {
+                checked = true
+            }
+            if (checked) {
+                Spacer(Modifier.height(8.dp))
+                Text("BLOCKED: No exact ECU mapping, independently verified write provider, original coding backup, stable supply check or read-back verification.",
+                    color = Amber, fontSize = 12.sp)
+            }
+        }
+        InfoCard("HOW REAL CODING WILL WORK",
+            "Identify ECU and software version, read original coding bytes, save a verified backup, calculate a module-specific FDL diff, require parked vehicle and external power, write via the supported Vgate/BMW coding transport, read back, and confirm or restore the original. No generic UDS hex write is offered.")
+    }
 }
