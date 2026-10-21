@@ -5,6 +5,12 @@
 Not affiliated with BMW, BimmerCode, BimmerLink, bimmer-tool, Vgate or CarJam.
 This project is original application code informed by publicly documented protocols and open-source research. It does **not** contain proprietary BMW databases or copied commercial application code.
 
+## F10 coding workspace (early preview)
+
+The native **Coding** tab now lists selected verified *feature names* for BMW F10/F11, their documented ECU dependencies, desired values, and a fail-closed readiness check. **It does not yet change real vehicle coding.** Generic SAE OBD2 PIDs are not BMW FDL coding datasets. A tested module transport, exact CAFD software mapping, read/backup/encode/write/read-back implementation, safe supply checks, and matching ECU identity are still required. The transaction model and offline blocking tests are implemented in `CodingModel.kt` and `CodingPlanTest.kt`. No physical ECU writes are wired up.
+
+Reference: https://bimmercode.app/vehicles/f10/
+
 ## This version actually implements
 
 - Native Kotlin/Jetpack Compose Android application, no WebView, no HTTP dashboard.
