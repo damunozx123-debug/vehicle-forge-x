@@ -36,9 +36,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      # Ubuntu runners already include the Android SDK command-line manager.
+      # setup-android@v3 currently calls the removed legacy "tools" package.
       - name: Install Android SDK
-        run: sdkmanager --install 'platforms;android-37' 'build-tools;37.0.0'
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+          SDKMANAGER=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install 'platforms;android-37' 'build-tools;37.0.0'
       - name: Android tests and build
         run: ./gradlew testDebugUnitTest assembleDebug --stacktrace
       - name: Upload debug APK
