@@ -306,10 +306,19 @@ private fun Sparkline(numbers: List<Double>, modifier: Modifier = Modifier) {
 
 @Composable
 private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel) {
+    var beforeText by remember { mutableStateOf("") }
     var reportText by remember { mutableStateOf("") }
     var reportExpanded by remember { mutableStateOf(false) }
+    val earlier = remember(beforeText) {
+        if (beforeText.isBlank()) null else runCatching { BimmerReportParser.parse(beforeText) }.getOrNull()
+    }
     val report = remember(reportText) {
         if (reportText.isBlank()) null else runCatching { BimmerReportParser.parse(reportText) }.getOrNull()
+    }
+    val delta = remember(earlier, report) {
+        if (earlier != null && report != null &&
+            earlier.modules.isNotEmpty() && report.modules.isNotEmpty())
+            BimmerScanComparator.compare(earlier, report) else null
     }
     LazyColumn(contentPadding = PaddingValues(16.dp),verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -324,13 +333,39 @@ private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel) {
                 if (reportExpanded) {
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
+                        value = beforeText, onValueChange = { beforeText = it.take(120_000) },
+                        modifier = Modifier.fillMaxWidth(), label = { Text("Earlier scan, optional") },
+                        minLines = 3, maxLines = 7
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
                         value = reportText, onValueChange = { reportText = it.take(120_000) },
-                        modifier = Modifier.fillMaxWidth(), label = { Text("Paste scan text here") },
+                        modifier = Modifier.fillMaxWidth(), label = { Text("Current / after-clear scan") },
                         minLines = 5, maxLines = 10
                     )
                     if (reportText.isNotBlank() && report?.modules?.isEmpty() != false)
                         Text("No BMW modules recognised. Paste the original text export, including module headers.",
                             color = Amber, fontSize = 12.sp)
+                }
+                if (delta != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("SCAN COMPARISON: ${delta.earlierCount} → ${delta.laterCount} codes",
+                        fontWeight = FontWeight.Bold, color = Aqua)
+                    Text("Persisted: ${delta.retained.size} · Disappeared: ${delta.disappeared.size} · New: ${delta.appeared.size} · Changed module: ${delta.attributionChanged.size}",
+                        fontSize = 12.sp, color = SubText)
+                    delta.retained.forEach {
+                        Text("PERSISTS  ${it.module} / ${it.code}", fontSize = 12.sp, color = Amber)
+                    }
+                    delta.attributionChanged.forEach {
+                        Text("MODULE CONFLICT  ${it.code}: ${it.from} → ${it.to}",
+                            fontSize = 12.sp, color = Amber)
+                    }
+                    if (delta.disappeared.isNotEmpty()) Text(
+                        "Disappeared from memory: " + delta.disappeared.joinToString { "${it.module}:${it.code}" },
+                        color = SubText, fontSize = 11.sp
+                    )
+                    Text("Clearing codes is not a repair. Rescan after an appropriate ignition/drive cycle and check which DTCs return.",
+                        color = Amber, fontSize = 11.sp)
                 }
                 if (report != null && report.modules.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
