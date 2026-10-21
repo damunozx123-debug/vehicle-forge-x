@@ -219,6 +219,8 @@ private fun Connection(ui: ForgeState, vm: ForgeViewModel) {
     var paired by remember { mutableStateOf(emptyList<BluetoothDevice>()) }
     var expanded by remember { mutableStateOf(false) }
     var permissionNote by remember { mutableStateOf("") }
+    val nearbyGranted = Build.VERSION.SDK_INT < 31 ||
+        ContextCompat.checkSelfPermission(ctx, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
     val allowed = { Build.VERSION.SDK_INT < 31 || ContextCompat.checkSelfPermission(ctx, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED }
     val permission = androidx.activity.compose.rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         permissionNote = if (granted) "Permission granted. Refresh paired devices." else "Bluetooth permission required for Vgate access."
@@ -236,6 +238,13 @@ private fun Connection(ui: ForgeState, vm: ForgeViewModel) {
             if (ui.connected) OutlinedButton(onClick = vm::disconnect) { Text("Disconnect",fontSize=12.sp) }
         }
         Spacer(Modifier.height(10.dp))
+        Text("Nearby devices permission: " + if (nearbyGranted) "Granted" else "Not granted",
+            color = if (nearbyGranted) Lime else Amber, fontSize = 11.sp)
+        if (!nearbyGranted) {
+            TextButton(onClick = { permission.launch(Manifest.permission.BLUETOOTH_CONNECT) }) {
+                Text("Request Bluetooth permission", fontSize = 12.sp)
+            }
+        }
         if (!ui.connected && !ui.busy) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Action("▶ Simulator", Modifier.weight(1f), onClick = vm::startDemo, primary = true)
@@ -297,7 +306,59 @@ private fun Sparkline(numbers: List<Double>, modifier: Modifier = Modifier) {
 
 @Composable
 private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel) {
+    var reportText by remember { mutableStateOf("") }
+    var reportExpanded by remember { mutableStateOf(false) }
+    val report = remember(reportText) {
+        if (reportText.isBlank()) null else runCatching { BimmerReportParser.parse(reportText) }.getOrNull()
+    }
     LazyColumn(contentPadding = PaddingValues(16.dp),verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Panel {
+                Text("BMW MODULE REPORT IMPORT", color = Aqua, fontWeight = FontWeight.Bold)
+                Text("Paste an existing bimmer-tool scan. Everything is interpreted offline; importing does not contact the car or clear faults.",
+                    fontSize = 12.sp, color = SubText)
+                Spacer(Modifier.height(8.dp))
+                Action(if (reportExpanded) "Hide importer" else "Import bimmer-tool report", Modifier.fillMaxWidth()) {
+                    reportExpanded = !reportExpanded
+                }
+                if (reportExpanded) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = reportText, onValueChange = { reportText = it.take(120_000) },
+                        modifier = Modifier.fillMaxWidth(), label = { Text("Paste scan text here") },
+                        minLines = 5, maxLines = 10
+                    )
+                    if (reportText.isNotBlank() && report?.modules?.isEmpty() != false)
+                        Text("No BMW modules recognised. Paste the original text export, including module headers.",
+                            color = Amber, fontSize = 12.sp)
+                }
+                if (report != null && report.modules.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("${report.faultCount} faults / ${report.faultModules} modules with faults / ${report.noResponseCount} no response",
+                        fontWeight = FontWeight.Bold, color = TextMain, fontSize = 12.sp)
+                    Text("${report.vehicle ?: "Unknown vehicle"}  ·  ${report.date ?: "Date missing"}",
+                        color = SubText, fontSize = 11.sp)
+                    if (report.noResponseCount > 0)
+                        Text("No response does not prove failure. Some units may not be fitted; verify factory equipment.",
+                            color = Amber, fontSize = 12.sp)
+                }
+            }
+        }
+        items(report?.modules?.filter { it.faults.isNotEmpty() }.orEmpty()) { module ->
+            Panel {
+                Text("${module.ecu} · ${module.description}", color = Aqua, fontWeight = FontWeight.Bold)
+                module.faults.forEach { fault ->
+                    val advice = BmwFaultAdviceLibrary.describe(module.ecu, fault.code)
+                    Spacer(Modifier.height(8.dp))
+                    Text("${fault.code} · ${advice.headline}", fontWeight = FontWeight.SemiBold,
+                        color = if (advice.severity == "HIGH") Danger else Amber)
+                    Text(advice.explanation, color = TextMain, fontSize = 12.sp)
+                    Text("CHECK: ${advice.checks}", color = SubText, fontSize = 12.sp)
+                    if (!advice.verifiedMeaning)
+                        Text("Definition not verified for this ECU variant", color = Amber, fontSize = 10.sp)
+                }
+            }
+        }
         item {
             SectionTitle("FAULT INTELLIGENCE", "Generic powertrain and emission diagnostics")
             Action("↻ Scan stored / pending / permanent", Modifier.fillMaxWidth(),enabled = ui.connected && !ui.busy,
