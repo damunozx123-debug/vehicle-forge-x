@@ -25,5 +25,6 @@ fun main() {
     assertTest("segmented VIN", ObdCore.vin("7E8 10 14 49 02 01 57 42\r7E8 21 41 46 57 31 31 43 30\r7E8 22 44 45 30 30 30 30 31 32\r>") == "WBAFW11C0DE000012")
     assertTest("ELM numbered VIN",ObdCore.vin("0: 49 02 01 57 42\r1: 41 46 57 31 31 43 30\r2: 44 45 30 30 30 30 31 32\r>") == "WBAFW11C0DE000012")
     codingPlanSmoke()
-    println("24 protocol, reasoning, and coding safety tests completed")
+    bimmerReportSmoke()
+    println("24 protocol/coding checks plus 15 BMW scan comparison assertions completed")
 }
