@@ -1,9 +1,19 @@
-name: Android and protocol checks
+name: Vehicle Forge X Android and protocol checks
 
 on:
   push:
+    paths:
+      - 'app/**'
+      - '*.kt'
+      - '*.sh'
+      - '*.kts'
+      - '.github/workflows/verify.yml'
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: vehicle-forge-x-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -47,9 +57,13 @@ jobs:
           "$SDKMANAGER" --install 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Android tests and build
         run: ./gradlew testDebugUnitTest assembleDebug --stacktrace
+      - name: Calculate install artifact SHA-256
+        run: sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: bmw-forge-x-debug-unsigned
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: vehicle-forge-x-debug-apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/SHA256SUMS.txt
