@@ -7,9 +7,9 @@
 
 ## 📲 Install on Android: direct APK
 
-**[⬇ Download Vehicle Forge X Android beta APK](https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.1/vehicle-forge-x-beta.apk)**
+**[⬇ Download Vehicle Forge X Android beta APK](https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.3/vehicle-forge-x-beta.apk)**
 
-This is the current **tested CI beta** (v0.3.0-beta.1). Later development commits may not yet be in that APK. [Browse all releases](https://github.com/damunozx123-debug/vehicle-forge-x/releases) for the newest downloadable version.
+This is the current **tested CI beta** (v0.3.0-beta.3). Later development commits may not yet be in that APK. [Browse all releases](https://github.com/damunozx123-debug/vehicle-forge-x/releases) for the newest downloadable version.
 
 1. Tap the direct APK link above on your Android phone and download the file.
 2. Open the downloaded `vehicle-forge-x-beta.apk` from Downloads. If Android blocks it, grant **Install unknown apps** permission **to the app you opened the download with**, then retry. Menu wording varies by Android vendor.
@@ -17,7 +17,7 @@ This is the current **tested CI beta** (v0.3.0-beta.1). Later development commit
 4. On a parked vehicle you own or are authorised to diagnose, pair a compatible **Bluetooth Classic SPP ELM327/Vgate** reader in system Bluetooth settings. Then choose **Paired ELM327** inside the app.
 5. In **Faults**, scan and share a VIN-safe diagnostic report. **Coding** shows offline-only research and synthetic simulations, not real ECU modifications.
 
-**[📖 Full installation and troubleshooting guide](docs/INSTALL_ANDROID.md)** · **[SHA-256 checksum and release details](https://github.com/damunozx123-debug/vehicle-forge-x/releases/tag/v0.3.0-beta.1)** · **[Screenshots and provenance](docs/SCREENSHOTS.md)**
+**[📖 Full installation and troubleshooting guide](docs/INSTALL_ANDROID.md)** · **[SHA-256 checksum and release details](https://github.com/damunozx123-debug/vehicle-forge-x/releases/tag/v0.3.0-beta.3)** · **[Screenshots and provenance](docs/SCREENSHOTS.md)**
 
 **Important:** This publicly distributed APK is **debug signed**. It may not update in place if rebuilt with a different debug signing certificate. Back up any private information/exports before removing an older installation. APK build tests do not prove compatibility with your particular adapter or vehicle.
 
