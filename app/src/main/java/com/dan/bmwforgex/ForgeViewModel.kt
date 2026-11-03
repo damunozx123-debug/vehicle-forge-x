@@ -35,7 +35,7 @@ data class ForgeState(
     val vin: String = "", val adapterInfo: String = "", val protocol: String = "",
     val battery: String = "—", val latency: Long = 0,
     val trace: List<Trace> = emptyList(),
-    val plate: String = "", val model: String = "BMW 5 Series F10", val year: String = "", val engine: String = "Unknown",
+    val plate: String = "", val model: String = "", val year: String = "", val engine: String = "Unknown",
     val lookUpStatus: String = "",
     val recording: Boolean = false, val recordCount: Int = 0,
     val busy: Boolean = false
@@ -45,7 +45,7 @@ class ForgeViewModel(app: Application) : AndroidViewModel(app) {
     private val preferences = app.getSharedPreferences("garage_local", 0)
     private val _ui = MutableStateFlow(ForgeState(
         plate = preferences.getString("plate", "") ?: "",
-        model = preferences.getString("model", "BMW 5 Series F10") ?: "BMW 5 Series F10",
+        model = preferences.getString("model", "") ?: "",
         year = preferences.getString("year", "") ?: "",
         engine = preferences.getString("engine", "Unknown") ?: "Unknown"
     ))
