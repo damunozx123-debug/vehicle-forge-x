@@ -1,10 +1,10 @@
 # Vehicle Forge X - install on Android
 
-Latest packaged and CI-tested beta: **v0.3.0-beta.1**. The repository's main branch may contain newer, unshipped changes. Do not assume the APK includes every recent commit.
+Latest packaged and CI-tested beta: **v0.3.0-beta.3**. The repository's main branch may contain newer, unshipped changes. Do not assume the APK includes every recent commit.
 
 ## No computer needed: download and install
 
-1. On your phone, open **[Download the Android APK directly](https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.1/vehicle-forge-x-beta.apk)**. The file is a ~12 MB Android package.
+1. On your phone, open **[Download the Android APK directly](https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.3/vehicle-forge-x-beta.apk)**. The file is a ~12 MB Android package.
 2. In Android Downloads / Files, tap `vehicle-forge-x-beta.apk`.
 3. If your phone blocks installing APKs, open **Settings → Apps → Special app access → Install unknown apps**, choose **the browser/file app that opened this APK**, and permit it to install this app. Exact menu wording varies on Xiaomi/HyperOS, Samsung, and stock Android.
 4. Confirm the Android installation prompt, then open **Vehicle Forge X**.
@@ -12,9 +12,9 @@ Latest packaged and CI-tested beta: **v0.3.0-beta.1**. The repository's main bra
 6. Open **Faults** to see fault reports, **Garage** to save a vehicle description locally, **Coding** to see proposed but non-operational config changes and **Lab** for offline diagnostics research.
 7. Return to Android's Install unknown apps settings and revoke that permission if you don't need sideloading afterward.
 
-**Direct APK:** https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.1/vehicle-forge-x-beta.apk
+**Direct APK:** https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.3/vehicle-forge-x-beta.apk
 
-**Checksum:** https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.1/SHA256SUMS.txt
+**Checksum:** https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.3/SHA256SUMS.txt
 
 The APK and SHA file were published by a GitHub Actions job after JVM protocol and Android unit tests passed. To verify integrity on Termux: `sha256sum ~/storage/downloads/vehicle-forge-x-beta.apk` and compare with the SHA256SUMS file. No physical car compatibility is implied by CI.
 
