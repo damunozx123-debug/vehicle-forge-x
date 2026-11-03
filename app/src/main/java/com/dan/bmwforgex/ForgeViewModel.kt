@@ -212,8 +212,8 @@ class ForgeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun readOnlyCommand(request: String) = viewModelScope.launch {
         val cmd = request.uppercase(Locale.ROOT).replace(" ", "")
-        // No Mode 04, UDS 0x2E/0x31, ECU reset, security, or AT header mutation.
-        if (!Regex("(?:01[0-9A-F]{2}|02[0-9A-F]{2}00|03|07|0A|0902|0904|0906|ATI|ATRV|ATDP)").matches(cmd)) {
+        // The transport independently enforces its own allowlist as a second barrier.
+        if (!VehicleCommandPolicy.allowedLabRead(cmd)) {
             _ui.update { it.copy(notice = "Blocked: command is outside read-only allowlist") }
             return@launch
         }
