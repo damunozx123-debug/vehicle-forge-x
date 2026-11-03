@@ -22,3 +22,21 @@
 | Physical vehicle hardware-in-loop tests | **Not verified** | Must be documented per ECU/firmware |
 
 See [multi-brand coding design](docs/MULTI_BRAND_CODING.md). A list of makes is not a matrix of verified compatibility.
+
+
+## v0.3 beta engineering additions
+
+| Capability | Source status | What is actually supported |
+| --- | --- | --- |
+| Privacy-safe free DTC report sharing | Implemented and Android/JVM tested | Generic SAE engine codes; full VIN and plate intentionally omitted |
+| Offline UDS DTC 0x19 0x02 decoder | Implemented and Android/JVM tested | Complete *already reassembled* response payload only |
+| Offline UDS DID 0x22 response parser | Implemented in core | Manually supplied payload only; does not contact ECU |
+| Manufacturer-specific research guidance | Implemented in Coding UI | BMW, VW Group, Toyota, Honda, Ford/Mazda and generic fallback; **not** compatibility certification |
+| Validated *offline* byte-diff preview | Implemented and unit tested | Explicit mask, offset, snapshot size and software ID; no actual ECU mapping provided |
+| Bluetooth Classic SPP deny-by-default read policy | Implemented and unit tested | Blocked writes/reset/security/AT-header mutation through existing transport |
+| Pro payments and server-issued entitlements | **Not implemented** | No paid subscriptions should be sold yet |
+| Real module-specific read-only UDS/ISO-TP | **Not implemented** | Real hardware capture/reassembly still needed |
+| Real ECU software version matched write/restore | **Not implemented** | Exact legal coding map + bench tests + supply check required |
+| Emissions/powertrain tuning and flashing | **Not implemented** | High-risk, separately regulated and out of beta scope |
+
+**Terminology rule:** "supports 23 makes" currently describes a planning selector, not verified OEM ECU access. Generic OBD coverage must be measured by actual vehicle and adapter reports, not a logo list.
