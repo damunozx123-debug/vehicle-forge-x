@@ -1,77 +1,85 @@
 # Vehicle Forge X
 
-**Open-source-ready native Android OBD-II diagnostics and multi-brand coding research platform. v0.2.0 beta.**
+**Free, open-source Android vehicle diagnostics. Multi-brand ECU research and future paid coding support.**
 
-> Status: works at source level as a generic OBD-II diagnostic app and offline coding *planner*. **Real ECU programming is not implemented.** Never interpret a simulated coding result as a vehicle change.
+[![Android CI](https://github.com/damunozx123-debug/vehicle-forge-x/actions/workflows/verify.yml/badge.svg)](https://github.com/damunozx123-debug/vehicle-forge-x/actions/workflows/verify.yml)
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Previously **BMW Forge X**. The original BMW F10 coding reference remains available. Not affiliated with any vehicle manufacturer, BimmerCode, BimmerLink, Vgate or CarJam.
+## 📲 Install on Android: direct APK
 
-## What you can use today
+**[⬇ Download Vehicle Forge X Android beta APK](https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.1/vehicle-forge-x-beta.apk)**
 
-- **Broad OBD-II diagnostics** on compatible vehicles and adapters: SAE Mode 01 sensor readings, advertised PID discovery, live trends, voltage, generic stored/pending/permanent fault codes, readiness bits, basic freeze frame, VIN attempts and CSV exports.
-- **Native Android** Kotlin/Jetpack Compose interface with paired **Bluetooth Classic SPP** ELM327/Vgate adapters. BLE-only, Wi-Fi and USB OBD adapters are not yet implemented.
-- **23-make vehicle selection for coding plans** covering BMW/MINI, VW Group, Mercedes-Benz, Ford, Toyota, Honda, Hyundai/Kia, Mazda, Nissan, Subaru, Volvo, Peugeot/Citroen, Renault and others. This list is for organising plans, **not verified feature compatibility**.
-- **8 candidate coding categories** such as lock feedback, automatic locking, mirrors, lighting, climate memory, display units, windows and start/stop preference.
-- **Safe coding simulator:** synthetic byte-state change, before/after SHA-256 and simulated read-back. It is fully disconnected from the physical vehicle interface.
-- **Configuration plan export:** documents the chosen option, possible ECU family and exact missing prerequisites while masking the VIN.
-- **Offline UDS ReadDataByIdentifier response decoder** for diagnostic research (parsing only, no UDS requests sent).
-- **BMW F10 reference catalogue retained** for legacy feature research, without unsupported CAFD claims.
-- **Offline sensor simulator** so contributors can inspect the app without a car or Bluetooth adapter.
+This is the current **tested CI beta** (v0.3.0-beta.1). Later development commits may not yet be in that APK. [Browse all releases](https://github.com/damunozx123-debug/vehicle-forge-x/releases) for the newest downloadable version.
 
-## What this version does NOT do
+1. Tap the direct APK link above on your Android phone and download the file.
+2. Open the downloaded `vehicle-forge-x-beta.apk` from Downloads. If Android blocks it, grant **Install unknown apps** permission **to the app you opened the download with**, then retry. Menu wording varies by Android vendor.
+3. Choose **Install** → **Open**. Start with **▶ Simulator**; no adapter or car is required.
+4. On a parked vehicle you own or are authorised to diagnose, pair a compatible **Bluetooth Classic SPP ELM327/Vgate** reader in system Bluetooth settings. Then choose **Paired ELM327** inside the app.
+5. In **Faults**, scan and share a VIN-safe diagnostic report. **Coding** shows offline-only research and synthetic simulations, not real ECU modifications.
 
-There is **no universal car coding**. There are no real ECU configuration writes, manufacturer-specific parameter datasets, live UDS 0x2E writes, ECU security-access operations, ECU flashing, battery registration, DPF regeneration, service resets, vehicle-specific all-module scans or active tests. Generic OBD-II does not grant access to those functions. See [coding architecture and release gates](docs/MULTI_BRAND_CODING.md).
+**[📖 Full installation and troubleshooting guide](docs/INSTALL_ANDROID.md)** · **[SHA-256 checksum and release details](https://github.com/damunozx123-debug/vehicle-forge-x/releases/tag/v0.3.0-beta.1)** · **[Screenshots and provenance](docs/SCREENSHOTS.md)**
 
-## Build and install
+**Important:** This publicly distributed APK is **debug signed**. It may not update in place if rebuilt with a different debug signing certificate. Back up any private information/exports before removing an older installation. APK build tests do not prove compatibility with your particular adapter or vehicle.
 
-Prerequisites: JDK 17, Android SDK 37, Gradle 9.3.1 and required SDK components.
+## Free forever versus future Pro
 
-```sh
-git clone https://github.com/damunozx123-debug/Bmw-forge-x.git
-cd Bmw-forge-x
+| Free diagnostics: available in source | Pro: planned, not for sale |
+| --- | --- |
+| Generic SAE OBD-II DTCs: stored, pending and permanent | Verified manufacturer-specific *comfort/body* coding |
+| Offline code explanations and first-check suggestions | Exact ECU firmware/version-matched coding profiles |
+| Basic live PID readings, readiness, freeze frame, VIN attempts | Original configuration backup + guarded write + read-back |
+| CSV exports and privacy-safe fault report sharing | Approved transport drivers with test evidence |
+| Offline BMW report comparison and UDS DTC response analysis | Ongoing compatibility updates and support |
+| Source code and simulator, forever free | No pricing or payments until a feature works on hardware |
+
+**Fault codes (DTCs) are not configuration values.** We will not promise to "edit codes" as if changing P0301 repairs a misfire. Pro will target explicitly defined options for verified, authorised vehicles. There are **no real coding or flashing functions** in the current version.
+
+## What is implemented
+
+- Native Kotlin / Jetpack Compose Android app; no WebView.
+- Standard SAE sensor polling on compatible OBD-II vehicles, DTC readout (03 / 07 / 0A), optional freeze frame, readiness, VIN parsing and local CSV.
+- Bluetooth Classic SPP ELM327/Vgate adapter transport, serialised commands, timeouts and fail-closed read-only lab allowlist.
+- Free offline DTC report sharing, intentionally without VIN or number plate.
+- Offline UDS service 0x19 DTC response and 0x22 DID response decoding, for **already assembled** replies. These functions do not send UDS frames.
+- 23-make *research* selector and eight candidate comfort/body feature types; **not** 23 verified coding implementations.
+- Synthetic coding simulator with validated byte-mask/offset/firmware checks and before/after digests.
+- Preserved BMW F10 reference feature catalogue and existing scan comparison tools.
+
+### Not implemented or not demonstrated on physical hardware
+
+- All-ECU manufacturer scans, authenticated ISO-TP/UDS live diagnostic sessions, manufacturer coding profiles, verified EEPROM/CAFD/as-built writes or recovery routines.
+- ECU firmware flashing, power/boost/fuel tuning, immobilizer/security access, DPF regeneration, airbag or brake control changes.
+- Bluetooth BLE GATT, Wi-Fi/USB adapter transports, Android store billing, a Pro subscription service or signed production releases.
+- A comprehensive test matrix of actual makes/models/adapter chipsets.
+
+## For developers
+
+Requirements: Android Studio or JDK 17, Android SDK API 37 and build tools 36.0.0. Gradle 9.3.1 is bootstrapped by the repository launcher.
+
+```bash
+git clone https://github.com/damunozx123-debug/vehicle-forge-x.git
+cd vehicle-forge-x
+
+./TEST_CORE.sh
 ./gradlew testDebugUnitTest assembleDebug
 ```
 
-The clone URL above remains the current URL until the repository has been renamed. When the name changes, use `damunozx123-debug/vehicle-forge-x`.
+APK path: `app/build/outputs/apk/debug/app-debug.apk`. In Android Studio, open the root folder, wait for Gradle sync, select `app`, then Run on a connected test device.
 
-A successful debug build creates `app/build/outputs/apk/debug/app-debug.apk`. For CI, see [Android build workflow](.github/workflows/verify.yml). **APK signing and installation should be tested on your device; the GitHub build does not prove physical-car compatibility.**
+The application ID is still `com.dan.bmwforgex` to preserve existing package-data compatibility during this rebrand. Device tests are still required.
 
-[Android install instructions](docs/INSTALL_ANDROID.md) · [Screenshots](docs/SCREENSHOTS.md)
+## Research, safety and contributions
 
-## Quick start
-
-1. Open the app and tap the offline **DEMO** option to see synthetic engine readings.
-2. For a real vehicle you own or are authorised to inspect, pair a compatible Bluetooth Classic ELM327 adapter in Android settings while the car is parked. Connect in the app.
-3. Only ECU-advertised standard PIDs are shown. Export scan data if needed.
-4. Open **Coding** to choose a make and candidate feature. Use the **offline sandbox** to preview a synthetic change. The app will always block real writes.
-5. If preparing an actual feature, export a VIN-masked configuration plan and source the exact OEM ECU/firmware coding definition before attempting any separately validated implementation.
-
-## Source structure
-
-```text
-app/src/main/java/com/dan/bmwforgex/
-├── MainActivity.kt                  Android UI
-├── ForgeViewModel.kt               Live session, data capture and garage
-├── core/
-│   ├── ObdCore.kt                   Generic SAE OBD response decoding
-│   ├── CodingModel.kt               Legacy BMW catalog + fail-closed transaction gate
-│   ├── UniversalCoding.kt           Multi-brand planning, sandbox and UDS response parser
-│   └── ...                          Fault knowledge, insights and CSV/report helpers
-└── data/
-    ├── Transport.kt                 Bluetooth SPP and no-hardware simulator
-    └── PlateLookup.kt               Optional licensed NZ plate lookup
-```
-
-Tests: `./TEST_CORE.sh` and `./gradlew testDebugUnitTest`. All coding tests use synthetic data. The Android application ID remains `com.dan.bmwforgex` to avoid breaking existing application data merely for a branding change.
-
-## Safety and public release
-
-This project is intended for authorised diagnostics and responsible open-source collaboration. Do not operate it while driving. Writing to a vehicle module without exact manufacturer documentation and hardware testing can cause irreversible damage or unsafe behaviour.
-
-- [Vehicle coding architecture](docs/MULTI_BRAND_CODING.md)
-- [Public repository rename and publication](docs/PUBLISH_PUBLIC.md)
-- [Security policy](SECURITY.md)
-- [Contribution rules](CONTRIBUTING.md)
+- [Deep research: 2026 ECU diagnostics and coding across makes](docs/ECU_CODING_RESEARCH_2026.md)
+- [Multi-brand coding architecture and safety gates](docs/MULTI_BRAND_CODING.md)
+- [Implemented versus proposed compatibility](FEATURE_MATRIX.md)
+- [Install guide](docs/INSTALL_ANDROID.md)
+- [Source contributions](CONTRIBUTING.md)
+- [Security and responsible disclosure](SECURITY.md)
 - [MIT licence](LICENSE)
 
-The repository currently uses its historical slug. Visibility changes require repository-admin GitHub permissions; changing its in-app name **does not automatically make GitHub public**.
+The GitHub code is publicly accessible. Contributions are welcome with test evidence and lawful data sources. No manufacturer-owned datasets, commercial software binaries, unlicensed calibration files, secret tokens or real VINs belong in this repository.
+
+Only diagnose vehicles you own or are authorised to inspect. Use a parked vehicle with a safe electrical supply. Even read-only requests can upset unstable ECUs. All proposed writes are locked pending proof of hardware compatibility, complete backups, relevant permissions and a validated restore procedure.
+
+*Not affiliated with BMW, Volkswagen Group, Ford, Toyota, Honda, Vgate, BimmerCode or any other brand named in the research.*
