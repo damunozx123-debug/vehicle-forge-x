@@ -1,34 +1,24 @@
-# Feature coverage matrix (audited 22 October 2026)
+# Vehicle Forge X - evidence-based feature matrix (v0.2)
 
-Legend: **IMPLEMENTED** = present in source (device unverified); **PARTIAL** = subset/limited scope; **PLANNED** = not present. Comparator feature summaries come from public feature pages, not reverse-engineered binaries.
+**Implemented** means source is present, **CI verified** requires successful workflow checks, and **vehicle verified** requires specific adapter/ECU testing. These statuses are distinct.
 
-| Function | Typical source app focus | BMW Forge X 0.1 | Notes |
-|---|---|---|---|
-| Android native interface | All | IMPLEMENTED | Compose, not WebView |
-| Vgate Bluetooth Classic SPP | All via supported adapters | IMPLEMENTED | Real handshake not bench tested; BLE absent |
-| Live generic engine PIDs | BimmerLink / bimmer-tool | IMPLEMENTED | 22 formulas, advertised bitmap, trends |
-| ECU-specific BMW sensor PIDs | BimmerLink / bimmer-tool | PLANNED | Manufacturer DID mapping/ENET |
-| Custom gauge + engineering units | BimmerLink and others | PARTIAL | Read-only preset cards, expandable explanations |
-| Timestamped data logs | bimmer-tool | IMPLEMENTED | CSV, raw replies, current-session buffer |
-| Stored/pending/permanent OBD codes | BimmerLink / bimmer-tool | IMPLEMENTED | Legislated OBD scope only |
-| All BMW module fault codes | BimmerLink / bimmer-tool | PLANNED | Must invent no F10 module capabilities |
-| Plain-language fault triage | Variable | PARTIAL | 26 bundled fault explanations + threshold hints |
-| Readiness monitor flags | OBD apps | PARTIAL | Basic bitmasks, not detailed monitor interpretation |
-| Freeze frame | OBD apps | PARTIAL | Mode 02, frame 0 selected sensors |
-| VIN from ECU | OBD apps | PARTIAL | Mode 09, common ELM formats |
-| NZ plate-to-model | Not a core BMW product feature | PARTIAL | Manual + optional developer API |
-| Battery registration | BimmerLink / bimmer-tool | PLANNED | Read-only v0.1 cannot register batteries |
-| Battery chemistry/capacity coding | BimmerCode | PLANNED | Needs specific ECU datasets and backup/restore |
-| Service interval reset | BimmerLink / bimmer-tool | PLANNED | Requires qualified ECU action |
-| DPF status and forced regeneration | BimmerLink / bimmer-tool | PLANNED | Manufacturer DIDs and active routines |
-| Short circuit reset / electronic handbrake | BimmerLink | PLANNED | Safety-critical writes, not guessed |
-| Injector correction | bimmer-tool | PLANNED | Diesel DDE parameter mapping |
-| BMW FDL coding / expert mode | BimmerCode | PLANNED | E-Sys class functionality, not built |
-| Coding backups + undo | BimmerCode | PLANNED | Mandatory before enabling writes |
-| BMW ENET over Ethernet | E-Sys / advanced projects | PLANNED | Native driver to be built |
-| BLE GATT adapters | Some OBD apps | PLANNED | Model-specific UART GATT implementation |
-| Traffic transaction journal | Engineering enhancement | IMPLEMENTED | Rolling 140 records, read-only terminal |
-| Pattern-based explanation | Engineering enhancement | PARTIAL | Basic deterministic rules, no learned diagnosis |
-| Offline no-hardware demo | Various FOSS OBD apps | IMPLEMENTED | Clearly synthetic |
+| Capability | Status in source | Coverage |
+| --- | --- | --- |
+| Native Android Kotlin/Compose UI | Implemented | Android |
+| Bluetooth Classic SPP ELM327 | Implemented | Compatible adapters; physical validation required |
+| Generic SAE engine sensor polling | Implemented | Supported OBD-II vehicles/PIDs |
+| Standard DTC 03/07/0A and readiness | Implemented | Emissions-related engine scope |
+| Freeze frame / VIN / CSV export | Partial | Depends on actual ECU reply |
+| BMW F10 reference and explanations | Retained | BMW-specific historical catalog |
+| Multi-brand coding planner | Implemented | 23 make labels, no compatibility claim |
+| Candidate comfort/body settings | Implemented | 8 proposed feature categories |
+| VIN-masked coding plan sharing | Implemented | No full VIN in export |
+| Coding simulator | Implemented | **Synthetic memory only** |
+| UDS response decode for supplied DID data | Implemented in core | Offline parse; no vehicle request |
+| Real ECU coding, security access, UDS writes | **Not implemented** | All vehicles; disabled |
+| Verified OEM configuration maps | **Not included** | All makes |
+| Module-specific transport, all-ECU scans | **Not implemented** | All makes |
+| Backup, write, read-back/restore on car | **Not implemented** | Only a fail-closed transaction interface exists |
+| Physical vehicle hardware-in-loop tests | **Not verified** | Must be documented per ECU/firmware |
 
-This table intentionally does not award points for planned functionality. OBD2 does not imply universal BMW access.
+See [multi-brand coding design](docs/MULTI_BRAND_CODING.md). A list of makes is not a matrix of verified compatibility.
