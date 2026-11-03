@@ -1,4 +1,4 @@
-name: Capture native Android emulator screenshot
+name: Capture Vehicle Forge X native emulator screenshot
 on:
   push:
     branches: [main]
@@ -56,5 +56,7 @@ jobs:
           git add docs/screenshots/android-first-run.png
           if ! git diff --cached --quiet; then
             git commit -m "docs: capture native Android emulator first run [skip ci]"
+            git fetch origin main
+            git rebase origin/main
             git push origin HEAD:main
           fi
