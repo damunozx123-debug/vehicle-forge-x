@@ -9,8 +9,8 @@ android {
         applicationId = "com.dan.bmwforgex"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0-beta.1"
+        versionCode = 4
+        versionName = "0.3.0-beta.2"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
