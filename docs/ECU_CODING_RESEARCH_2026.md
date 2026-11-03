@@ -89,7 +89,7 @@ Contributors must be credited; decide on DCO/CLA and any separate commercial dat
 
 1. [x] Public repo with basic free generic DTC diagnostic functionality.
 2. [x] Local-first VIN-safe reports, standalone UDS reply parsing and synthetic coding planner.
-3. [ ] Direct-install versioned GitHub beta APK signed and published by passing release CI.
+3. [x] Direct-install versioned GitHub **debug-signed** beta APK publicly released after successful CI; stable production signing still required.
 4. [ ] A tested phone + Bluetooth Classic adapter against at least 2 different makes, with documented evidence.
 5. [ ] One full manufacturer ECU *read-only* identity/status/DTC path verified from actual ISO-TP frames.
 6. [ ] One licensed ECU profile and completely verified backup/read-back on a bench.
