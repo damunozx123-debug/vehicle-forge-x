@@ -4,8 +4,8 @@
 
 ## Direct Android installer
 
-Public v0.3.0-beta.1 APK:
-https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.1/vehicle-forge-x-beta.apk
+Public v0.3.0-beta.3 APK:
+https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.3/vehicle-forge-x-beta.apk
 
 [Install on Android](INSTALL_ANDROID.md). The beta is not signed with a persistent release signing key; install and updates remain experimental.
 
@@ -13,9 +13,9 @@ https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-be
 
 `.github/workflows/publish-beta.yml` compiles, runs Kotlin and Android tests, checksums the resulting APK and attempts to publish a GitHub prerelease with a direct APK link. The APK artifact exists even if GitHub refuses release publication.
 
-On the public repo, the **v0.3.0-beta.2** run https://github.com/damunozx123-debug/vehicle-forge-x/actions/runs/41588553944 succeeded in all compilation/test steps but its final `gh release create` failed: **HTTP 403: Resource not accessible by integration**. This is a GitHub workflow token permission problem, not an Android compile failure.
+Earlier, the **v0.3.0-beta.2** run https://github.com/damunozx123-debug/vehicle-forge-x/actions/runs/41588553944 succeeded in all compilation/test steps but its final `gh release create` failed: **HTTP 403: Resource not accessible by integration**. It was a GitHub workflow token permission problem, not an Android compile failure. **The subsequent v0.3.0-beta.3 build and direct GitHub release succeeded.** See https://github.com/damunozx123-debug/vehicle-forge-x/releases/tag/v0.3.0-beta.3.
 
-### Owner action for full release automation
+### If release automation reports 403 again
 
 Inspect **Repository Settings → Actions → General → Workflow permissions**. If available, select **Read and write permissions**, save, then rerun the publishing workflow after verifying its code. The workflow already requests `permissions: contents: write`. Repository policy may prevent this setting; do not bypass restrictions or put personal tokens into YAML.
 
