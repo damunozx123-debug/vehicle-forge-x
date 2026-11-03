@@ -1,0 +1,56 @@
+name: ECU configuration research proposal
+description: Propose a legally sourced, testable, non-safety ECU coding profile (no secrets or firmware).
+title: "[ECU Research] "
+labels: ["research"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **No OEM copyrighted binary dumps, private algorithms, security keys, bypass methods or VINs.** Do not test live writes without an independently validated recovery plan.
+  - type: input
+    id: vehicle
+    attributes:
+      label: Make, model, generation and years
+      placeholder: "Ford Focus Mk3, 2012-2018"
+    validations:
+      required: true
+  - type: input
+    id: ecu
+    attributes:
+      label: ECU name, module ID and firmware version
+      placeholder: "BCM / software version (if publicly shareable)"
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Proposed capability
+      options:
+        - "Read ECU identity or DTCs"
+        - "Read original configuration and prepare backup"
+        - "Comfort feature parameter (future bench-only coding)"
+        - "OEM-documented service procedure (review only)"
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Legal source / official documentation URL
+    validations:
+      required: true
+  - type: textarea
+    id: methodology
+    attributes:
+      label: Exact supported conditions and testing plan
+      description: "Include adapter, protocol, positive/negative replies, firmware match, backup requirements, bench evidence, recovery plan and what is still unknown."
+    validations:
+      required: true
+  - type: checkboxes
+    id: licensing
+    attributes:
+      label: Rights and safety
+      options:
+        - label: "I own or am authorised to test the hardware and can share these notes lawfully."
+          required: true
+        - label: "The proposal contains no keys, copyrighted OEM files, private customer identifiers or unverified universal coding claims."
+          required: true
