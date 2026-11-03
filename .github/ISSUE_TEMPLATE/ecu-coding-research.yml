@@ -1,7 +1,6 @@
 name: ECU configuration research proposal
 description: Propose a legally sourced, testable, non-safety ECU coding profile (no secrets or firmware).
 title: "[ECU Research] "
-labels: ["research"]
 body:
   - type: markdown
     attributes:
