@@ -154,3 +154,11 @@ bash PUBLISH_GITHUB.sh --public  # public
 ```
 
 These scripts prompt for GitHub sign-in when needed and do not create or push to any account without valid credentials. For a repository name conflict, choose another name or set an existing remote manually.
+
+## Installation and screenshot evidence
+
+- [Android install and safe read-only OBD testing](docs/INSTALL_ANDROID.md)
+- [Real device screenshot capture procedure](docs/SCREENSHOTS.md)
+- [Native Android emulator screenshot workflow](.github/workflows/capture-android-screenshot.yml)
+
+Emulator captures are not real-vehicle compatibility tests.
