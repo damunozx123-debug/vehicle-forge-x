@@ -25,6 +25,23 @@ if [[ "$STATUS" != "success" ]]; then
   exit 1
 fi
 
+# Review the full local Git history for common credential fingerprints.
+# Heuristic only: a clean result is not proof that no secrets or personal data exist.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if git -C "$ROOT" log --all -p | grep -Eiq '(ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{32,}|AIza[A-Za-z0-9_-]{30,}|AKIA[0-9A-Z]{16}|BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY)'; then
+    echo "Possible credentials were detected in Git history. Refusing public release." >&2
+    exit 1
+  fi
+  if git -C "$ROOT" rev-list --objects --all | grep -Eiq '(\\.env$|\\.(p12|pfx|jks|keystore|pem)$)'; then
+    echo "Potential secret-bearing files exist in Git history. Review before release." >&2
+    exit 1
+  fi
+else
+  echo "Run this from a complete clone: full commit history review is required." >&2
+  exit 1
+fi
+
 echo "Publishing $TARGET as $NEW. The entire git history, Actions logs and code will become public."
 echo "Ensure no real VINs, API credentials, customer data or confidential code exist in repository history."
 echo "Type PUBLISH to confirm you have reviewed the historical content:"
