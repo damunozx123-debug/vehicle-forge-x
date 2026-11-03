@@ -1,25 +1,41 @@
-# Publish Vehicle Forge X to GitHub (admin permissions required)
+# Vehicle Forge X publication and release status
 
-The connected ChatGPT GitHub integration can change repository files but **cannot rename repositories or change visibility**. This script performs those administrative actions using the GitHub CLI on your own device.
+**The repository is already PUBLIC and renamed.** Current URL: https://github.com/damunozx123-debug/vehicle-forge-x . Do not create or rename another repository.
 
-## Android Termux / Linux
+## Direct Android installer
+
+Public v0.3.0-beta.1 APK:
+https://github.com/damunozx123-debug/vehicle-forge-x/releases/download/v0.3.0-beta.1/vehicle-forge-x-beta.apk
+
+[Install on Android](INSTALL_ANDROID.md). The beta is not signed with a persistent release signing key; install and updates remain experimental.
+
+## Automated beta releases
+
+`.github/workflows/publish-beta.yml` compiles, runs Kotlin and Android tests, checksums the resulting APK and attempts to publish a GitHub prerelease with a direct APK link. The APK artifact exists even if GitHub refuses release publication.
+
+On the public repo, the **v0.3.0-beta.2** run https://github.com/damunozx123-debug/vehicle-forge-x/actions/runs/41588553944 succeeded in all compilation/test steps but its final `gh release create` failed: **HTTP 403: Resource not accessible by integration**. This is a GitHub workflow token permission problem, not an Android compile failure.
+
+### Owner action for full release automation
+
+Inspect **Repository Settings → Actions → General → Workflow permissions**. If available, select **Read and write permissions**, save, then rerun the publishing workflow after verifying its code. The workflow already requests `permissions: contents: write`. Repository policy may prevent this setting; do not bypass restrictions or put personal tokens into YAML.
+
+If you cannot grant Actions release rights, publish a **tested artifact** using your authenticated GitHub CLI session, not by checking secrets into the project:
 
 ```sh
-pkg install gh git -y      # Termux only; Linux users install gh/git with their distro manager
+# Termux
+pkg install gh git coreutils -y
 gh auth login
-gh repo clone damunozx123-debug/Bmw-forge-x
-cd Bmw-forge-x
-bash scripts/rename_and_publish.sh
+gh repo clone damunozx123-debug/vehicle-forge-x
+cd vehicle-forge-x
+
+# Example: publish the beta.2 build from passing CI steps.
+bash scripts/publish_ci_apk.sh v0.3.0-beta.2 41588553944
 ```
 
-The script refuses publication unless the latest `verify.yml` run completed successfully, then asks for a literal **PUBLISH** confirmation. It renames the remote to `vehicle-forge-x`, switches it to public, updates the description, and verifies the resulting visibility.
+This helper confirms relevant CI steps passed, downloads the artifact, verifies its SHA-256, asks for confirmation, then publishes to GitHub Releases under your existing GitHub account. Never publish a release without verifying its build commit and signing provenance. For later betas use the matching tag, workflow run ID and artifact name.
 
-**Before typing PUBLISH:** examine all Git history, GitHub Actions logs, issues, any release assets and screenshots for customer or personal information, VINs, tokens, API keys and licensed databases. History remains public after changing visibility. Audit any old secrets and rotate compromised credentials before publishing.
+Do not use an unsigned/unvalidated ECU coding build on a customer car. The debug APK is diagnostic beta software only.
 
-Reference: [GitHub CLI rename](https://cli.github.com/manual/gh_repo_rename) and [visibility change](https://cli.github.com/manual/gh_repo_edit). `--accept-visibility-change-consequences` is required.
+## Future stable release requirement
 
-## Without a shell
-
-On the GitHub repository page: **Settings → General → Repository name**: `vehicle-forge-x` → Rename. Then **Settings → General → Danger Zone → Change repository visibility → Public**, confirm the consequences.
-
-The existing Android application ID remains `com.dan.bmwforgex` so the Java/Kotlin source package and existing installation data are not silently relocated during a cosmetic rename.
+Before Play Store/workshop distribution, produce a non-debug release signing key stored in GitHub encrypted secrets or another trusted signing infrastructure, rotate/recover carefully, use reproducible build inputs and verify an **in-place signed update** on Android. Never commit keystore material to a public repository.
