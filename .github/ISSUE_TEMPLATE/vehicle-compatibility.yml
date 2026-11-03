@@ -1,7 +1,6 @@
 name: Vehicle compatibility report
 description: Report a real, authorised OBD-II read test without disclosing private identifiers.
 title: "[Vehicle Test] "
-labels: ["compatibility"]
 body:
   - type: markdown
     attributes:
