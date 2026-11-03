@@ -700,6 +700,18 @@ private fun CodingWorkspace(ui: ForgeState) {
             Text("Real ECU coding write access: DISABLED", color = Danger, fontSize = 12.sp)
         }
 
+        val guidance = EcuResearchRoutes.forMake(selectedMake)
+        Panel {
+            Text("RESEARCHED ECU ACCESS PATH", color = Aqua, fontWeight = FontWeight.Bold)
+            Text(guidance.platform, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text("Official / documented tools: " + guidance.documentedTools,
+                color = SubText, fontSize = 11.sp)
+            Text("Interface: " + guidance.physicalInterface, color = SubText, fontSize = 11.sp)
+            Text("Requires: " + guidance.codingDataRequirement, color = SubText, fontSize = 11.sp)
+            Text(guidance.accessWarning, color = Amber, fontSize = 11.sp)
+            Text("Research source: " + guidance.primaryReference, color = Aqua, fontSize = 10.sp)
+        }
+
         SectionTitle("FEATURE CANDIDATES", "No universal byte values or make/model support is assumed")
         UniversalCoding.features.forEach { candidate ->
             val active = candidate.id == selectedId
