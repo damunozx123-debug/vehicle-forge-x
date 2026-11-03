@@ -55,3 +55,14 @@ CI runs the isolated JVM checks and Android tests/build. The isolated tests use 
 - https://developer.android.com/develop
 
 Only work with vehicles you own or are explicitly authorised to test. No interactive device use while driving.
+
+
+## v0.3.0 added engineering components (3 November 2026)
+
+- `OfflineCodingCodec.kt`: a real pure-Kotlin *offline* binary diff planner. It requires an exact software-ID match, snapshot length, bounded byte offsets, disjoint bit masks, a finite list of allowed values and prohibits no-op previews. It preserves original bytes and emits per-byte changes and original/proposed SHA-256 digests. This does **not** prove the byte definitions correspond to a real car, and the resulting proposed bytes are **never sent to a vehicle**.
+- `VehicleCommandPolicy.kt`: a small allowlist enforced inside the live `VgateSppTransport.command` implementation **and** in the public Lab command screen; it refuses generic ECU-write/reset/security commands and arbitrary AT header changes. A future manufacturer-specific driver will require an entirely separate, audited hardware transport.
+- `DiagnosticExport.kt`: offline privacy-safe free generic DTC report and a strictly **offline** decoder for already reassembled UDS service 0x19 subtype 0x02 responses. No live CAN/ISO-TP reassembly or manufacturer DTC discovery should be inferred from this decoder.
+- `EcuResearchRoutes.kt`: in-app make-specific manufacturer research and hardware/firmware access prerequisites, using public official references. A listed make is not a passed compatibility test.
+- `app/src/test`: negative tests for out-of-bounds, mask overlaps, mismatched firmware, invalid selections, read-only commands and privacy guarantees.
+
+**Not enabled:** No Pro checkout, entitlement server, OEM-specific live UDS stack, actual ECU backups, configuration write or firmware flashing. All those require new implementation and independent hardware validation. For evidence see [research notes](ECU_CODING_RESEARCH_2026.md) and [Free versus Pro policy](../README.md#free-forever-versus-future-pro).
