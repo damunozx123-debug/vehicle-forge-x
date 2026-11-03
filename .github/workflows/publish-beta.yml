@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Test, build and publish v0.3.0-beta.1
+    name: Test, build and publish v0.3.0-beta.2
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -52,14 +52,14 @@ jobs:
       - name: Upload debug artifact for audit
         uses: actions/upload-artifact@v4
         with:
-          name: vehicle-forge-x-v0.3.0-beta.1
+          name: vehicle-forge-x-v0.3.0-beta.2
           path: dist/
       - name: Publish public GitHub prerelease (direct APK)
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          VERSION="v0.3.0-beta.1"
+          VERSION="v0.3.0-beta.2"
           if gh release view "$VERSION" >/dev/null 2>&1; then
             echo "Release $VERSION already exists. Refusing to overwrite published binaries."
             exit 1
