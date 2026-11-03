@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothSocket
 import android.content.Context
 import com.dan.bmwforgex.core.ObdCore
 import com.dan.bmwforgex.core.Sensors
+import com.dan.bmwforgex.core.VehicleCommandPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -52,6 +53,9 @@ class VgateSppTransport(private val adapter: BluetoothAdapter, private val devic
     }
 
     override suspend fun command(cmd: String, timeoutMs: Long): String = mutex.withLock {
+        require(VehicleCommandPolicy.allowedAdapterRequest(cmd)) {
+            "Bluetooth OBD transport blocks unsupported or ECU-write commands"
+        }
         withContext(Dispatchers.IO) {
             val s = socket ?: throw IOException("Bluetooth is not connected")
             val stream = s.inputStream
@@ -97,6 +101,9 @@ class DemoTransport : ObdTransport {
     override suspend fun open() { connected = true }
     override suspend fun close() { connected = false }
     override suspend fun command(cmd: String, timeoutMs: Long): String {
+        require(VehicleCommandPolicy.allowedAdapterRequest(cmd)) {
+            "Simulator transport blocks unsupported or ECU-write commands"
+        }
         check(connected) { "Simulator closed" }
         delay(22)
         counter++
