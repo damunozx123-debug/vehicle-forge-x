@@ -232,7 +232,7 @@ private fun Connection(ui: ForgeState, vm: ForgeViewModel) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(ui.name, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(ui.protocol.ifBlank { "Vgate / ELM327 Bluetooth Classic (SPP)" },
+                Text(ui.protocol.ifBlank { "ELM327 Bluetooth Classic (SPP)" },
                     color = SubText, fontSize = 11.sp, maxLines = 2)
             }
             if (ui.connected) OutlinedButton(onClick = vm::disconnect) { Text("Disconnect",fontSize=12.sp) }
@@ -248,7 +248,7 @@ private fun Connection(ui: ForgeState, vm: ForgeViewModel) {
         if (!ui.connected && !ui.busy) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Action("▶ Simulator", Modifier.weight(1f), onClick = vm::startDemo, primary = true)
-                Action("▤ Paired Vgate", Modifier.weight(1f), onClick = {
+                Action("▤ Paired ELM327", Modifier.weight(1f), onClick = {
                     expanded = !expanded
                     if (!allowed()) permission.launch(Manifest.permission.BLUETOOTH_CONNECT)
                     else paired = runCatching { bondedAdapters(ctx) }.getOrDefault(emptyList())
@@ -306,6 +306,7 @@ private fun Sparkline(numbers: List<Double>, modifier: Modifier = Modifier) {
 
 @Composable
 private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel) {
+    val context = LocalContext.current
     var beforeText by remember { mutableStateOf("") }
     var reportText by remember { mutableStateOf("") }
     var reportExpanded by remember { mutableStateOf(false) }
@@ -395,9 +396,22 @@ private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel) {
             }
         }
         item {
-            SectionTitle("FAULT INTELLIGENCE", "Generic powertrain and emission diagnostics")
+            SectionTitle("FREE DIAGNOSTICS", "Generic powertrain and emission fault codes on compatible OBD-II cars")
             Action("↻ Scan stored / pending / permanent", Modifier.fillMaxWidth(),enabled = ui.connected && !ui.busy,
                 primary = true,onClick=vm::scanCodes)
+            Spacer(Modifier.height(8.dp))
+            Action("Share privacy-safe fault report", Modifier.fillMaxWidth(),
+                enabled = ui.connected && !ui.busy) {
+                val report = DiagnosticExport.summary(ui.dtcs, ui.readiness,
+                    ui.simulator, System.currentTimeMillis())
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_TEXT, report)
+                }
+                context.startActivity(android.content.Intent.createChooser(intent, "Share diagnostic report"))
+            }
+            Text("Free forever. The export excludes VIN, plate number and adapter address.",
+                fontSize = 11.sp, color = SubText)
         }
         item {
             Action("↻ Read freeze-frame snapshot",Modifier.fillMaxWidth(),enabled = ui.connected && !ui.busy,
@@ -493,12 +507,15 @@ private fun Garage(ui: ForgeState, vm: ForgeViewModel) {
                 onClick={vm.lookupPlate(plate,apiKey)})
             if (ui.lookUpStatus.isNotBlank()) Text(ui.lookUpStatus,fontSize=12.sp,color=Amber)
         }
-        SectionTitle("F10 SPECIALIST PROFILE", "Factory-specific readout roadmap")
-        InfoCard("F10 / F11 IDENTIFICATION",BmwF10.overview)
-        BmwF10.modules.forEach { (module, meaning) ->
-            Row(Modifier.fillMaxWidth().background(Surface,RoundedCornerShape(11.dp)).padding(12.dp)) {
-                Text(module,color=Aqua,fontWeight=FontWeight.Bold,fontSize=12.sp, modifier=Modifier.width(122.dp))
-                Text(meaning,color=SubText,fontSize=12.sp)
+        if (UniversalCoding.makeFromGarage(ui.model) == "BMW") {
+            SectionTitle("BMW F10 SPECIALIST PROFILE", "For BMW owners only - verify compatibility")
+            InfoCard("F10 / F11 IDENTIFICATION", BmwF10.overview)
+            BmwF10.modules.forEach { (module, meaning) ->
+                Row(Modifier.fillMaxWidth().background(Surface, RoundedCornerShape(11.dp)).padding(12.dp)) {
+                    Text(module, color=Aqua, fontWeight=FontWeight.Bold,
+                        fontSize=12.sp, modifier=Modifier.width(122.dp))
+                    Text(meaning, color=SubText, fontSize=12.sp)
+                }
             }
         }
     }
@@ -506,6 +523,7 @@ private fun Garage(ui: ForgeState, vm: ForgeViewModel) {
 
 @Composable
 private fun Engineering(ui: ForgeState, vm: ForgeViewModel) {
+    var udsPayload by remember { mutableStateOf("5902FF12345609") }
     var command by remember { mutableStateOf("010C") }
     var selectedSection by remember { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize()) {
@@ -539,7 +557,31 @@ private fun Engineering(ui: ForgeState, vm: ForgeViewModel) {
                             maxLines=5,overflow=TextOverflow.Ellipsis)
                     }
                 }
-                item { InfoCard("EXTRACTION REALITY", "ELM327 command-response polling is not arbitrary raw CAN acquisition or direct BMW UDS gateway access. Dedicated ENET/UDS transports are separate future drivers.") }
+                item {
+                    Panel {
+                        Text("OFFLINE UDS FAULT DECODER (0x19)", color = Aqua, fontWeight = FontWeight.Bold)
+                        Text("Paste a complete reassembled UDS service 0x19 0x02 application payload. No command is sent to any vehicle.",
+                            color = SubText, fontSize = 11.sp)
+                        Spacer(Modifier.height(8.dp))
+                        ForgeInput("Example 5902FF12345609", udsPayload) { udsPayload = it.take(8192) }
+                        when (val result = UdsDtcDecoder.parsePayload(udsPayload)) {
+                            is UdsDtcResult.Report -> {
+                                Text("Available status mask: %02X · DTCs: %d".format(result.availableStatusMask, result.dtcs.size),
+                                    fontSize = 12.sp, color = Lime)
+                                result.dtcs.take(30).forEach { dtc ->
+                                    Text("${dtc.hex} · status %02X · active=${dtc.active} pending=${dtc.pending} confirmed=${dtc.confirmed}"
+                                        .format(dtc.status), fontSize = 11.sp, color = TextMain)
+                                }
+                                if (result.truncated) Text("TRUNCATED: incomplete final DTC record", fontSize = 11.sp, color = Danger)
+                            }
+                            is UdsDtcResult.Negative ->
+                                Text("ECU negative response 0x%02X".format(result.code), color = Amber, fontSize = 12.sp)
+                            UdsDtcResult.Unrecognised ->
+                                Text("Invalid or incomplete UDS 0x19 0x02 payload", color = Amber, fontSize = 11.sp)
+                        }
+                    }
+                }
+                item { InfoCard("EXTRACTION REALITY", "ELM327 polling is not raw CAN capture. This decoder accepts already reassembled UDS payloads only; no ECU-wide transport or write commands are implemented.") }
             }
             1 -> LazyColumn(contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 item { SectionTitle("BMW F10 REPAIR PLAYBOOKS", "Interpret patterns, not isolated numbers") }
@@ -631,7 +673,7 @@ private fun CodingWorkspace(ui: ForgeState) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitle("MULTI-BRAND CODING", "Plan configurations for many makes - no unverified ECU writes")
-        Banner("All entries are candidate features, not confirmed compatibility. LIVE CODING IS LOCKED until exact ECU and software mappings are validated.", Amber)
+        Banner("FREE: Fault reading and reports. PRO: Vehicle-specific configuration is planned, not for sale or enabled yet. Exact ECU/firmware support must be verified first.", Amber)
 
         Panel {
             Text("VEHICLE TARGET", color = Aqua, fontWeight = FontWeight.Bold)
