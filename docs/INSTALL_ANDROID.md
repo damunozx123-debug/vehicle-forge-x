@@ -4,7 +4,7 @@ This is an **experimental read-only OBD-II app**. No coding, ECU flashing, adapt
 
 ## GitHub debug build
 
-Open [Android and protocol checks](../actions/workflows/verify.yml) and choose a successful build on the version you intend to install. If an Android APK artifact is present, extract it and verify its filename and signing status. A workflow may provide an **unsigned** APK: an unsigned file will not install directly. Do not confuse a successfully compiled APK with an installable or vehicle-tested release.
+Open [Android and protocol checks](https://github.com/damunozx123-debug/Bmw-forge-x/actions/workflows/verify.yml) and choose a successful build on the version you intend to install. If an Android APK artifact is present, extract it and verify its filename and signing status. A workflow may provide an **unsigned** APK: an unsigned file will not install directly. Do not confuse a successfully compiled APK with an installable or vehicle-tested release.
 
 ## Local Android Studio build
 
