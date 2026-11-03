@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
                 background = Background, surface = Surface, onSurface = TextMain, onBackground = TextMain)) {
                 ForgeApp(model) {
                     pendingCsv = model.csv()
-                    saveCsv.launch("bmw-forge-${SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())}.csv")
+                    saveCsv.launch("vehicle-forge-${SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())}.csv")
                 }
             }
         }
@@ -94,8 +94,8 @@ private fun ForgeApp(vm: ForgeViewModel, export: () -> Unit) {
     Column(Modifier.fillMaxSize().background(Background)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("BMW FORGE", fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 1.8.sp)
-                Text("X  /  VEHICLE INTELLIGENCE", fontSize = 10.sp, color = Aqua, letterSpacing = 1.7.sp)
+                Text("VEHICLE FORGE", fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 1.8.sp)
+                Text("X  /  MULTI-BRAND DIAGNOSTICS", fontSize = 10.sp, color = Aqua, letterSpacing = 1.7.sp)
             }
             StatusPill(if (ui.simulator && ui.connected) "SIMULATOR" else ui.state.uppercase(),
                 if (!ui.connected) SubText else if (ui.simulator) Amber else Lime)
@@ -430,7 +430,7 @@ private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel) {
                 for (code in codes) FaultCard(code)
             }
         }
-        item { InfoCard("IMPORTANT LIMITATION", "Standard OBD Mode 03/07/0A cannot inventory BMW DSC, EGS, airbag, body or gateway faults. An ECU-wide BMW scan requires manufacturer protocols over a validated transport such as ENET.") }
+        item { InfoCard("IMPORTANT LIMITATION", "Standard OBD Mode 03/07/0A cannot read ABS, airbags, body modules or other OEM-specific faults on most vehicles. Full ECU-wide scans require manufacturer protocols and verified hardware.") }
     }
 }
 
@@ -617,63 +617,133 @@ private fun Engineering(ui: ForgeState, vm: ForgeViewModel) {
 /** Offline coding plan. Does not perform ECU writes. */
 @Composable
 private fun CodingWorkspace(ui: ForgeState) {
-    var selectedId by remember { mutableStateOf(F10CodingCatalog.features.first().id) }
-    val feature = F10CodingCatalog.features.first { it.id == selectedId }
-    var chosen by remember(selectedId) { mutableStateOf(feature.choices.first()) }
+    val context = LocalContext.current
+    var selectedMake by remember(ui.model) { mutableStateOf(UniversalCoding.makeFromGarage(ui.model)) }
+    var selectedId by remember { mutableStateOf(UniversalCoding.features.first().id) }
+    val feature = UniversalCoding.features.first { it.id == selectedId }
+    var chosen by remember(selectedId) { mutableStateOf(feature.options.first()) }
     var checked by remember { mutableStateOf(false) }
+    var simulation by remember { mutableStateOf<DemoCodingResult?>(null) }
+    var bmwSelection by remember { mutableStateOf(F10CodingCatalog.features.first().id) }
+    val target = VehicleDescriptor(selectedMake, ui.model, ui.year, if (ui.simulator) "" else ui.vin)
+    val plan = UniversalCoding.plan(target, feature.id, chosen)
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitle("BMW F10 CODING", "Feature selection · BMW-specific ECU programming roadmap")
-        Banner("NO VEHICLE WRITES. Feature labels are real, but byte-level CAFD mappings are not verified.", Amber)
+        SectionTitle("MULTI-BRAND CODING", "Plan configurations for many makes - no unverified ECU writes")
+        Banner("All entries are candidate features, not confirmed compatibility. LIVE CODING IS LOCKED until exact ECU and software mappings are validated.", Amber)
+
         Panel {
-            Text("TRANSPORT READINESS", color = Aqua, fontWeight = FontWeight.Bold)
-            Text("Adapter: " + ui.name, fontSize = 12.sp)
-            Text("Session: " + (if (ui.simulator) "SIMULATOR" else ui.state), fontSize = 12.sp)
-            Text("Vehicle VIN: " + ui.vin.ifBlank { "Not read yet" }, fontSize = 12.sp)
-            Text("BMW coding-data read: NOT AVAILABLE", color = Amber, fontSize = 12.sp)
-            Text("BMW coding-data write: LOCKED", color = Amber, fontSize = 12.sp)
+            Text("VEHICLE TARGET", color = Aqua, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            Text("Choose make for a proposed plan", fontSize = 12.sp, color = SubText)
+            UniversalCoding.makes.chunked(3).forEach { makes ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    makes.forEach { make ->
+                        FilterChip(
+                            selected = selectedMake == make,
+                            onClick = { selectedMake = make; checked = false; simulation = null },
+                            label = { Text(make, fontSize = 10.sp, maxLines = 1) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    repeat(3 - makes.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            Text("Garage model: " + ui.model.ifBlank { "Not selected" }, color = SubText, fontSize = 12.sp)
+            Text("Year: " + ui.year.ifBlank { "Unknown" }, color = SubText, fontSize = 12.sp)
+            Text("VIN: " + (if (UniversalCoding.isVinFormatValid(target.vin)) "***" + target.vin.takeLast(5) else "Unverified"),
+                color = SubText, fontSize = 12.sp)
+            Text("Connection: " + (if (ui.simulator) "SYNTHETIC DEMO" else ui.state), color = Amber, fontSize = 12.sp)
+            Text("Real ECU coding write access: DISABLED", color = Danger, fontSize = 12.sp)
         }
-        SectionTitle("F10 CONFIGURATION CATALOG", "Select a feature and desired value")
-        F10CodingCatalog.features.forEach { candidate ->
+
+        SectionTitle("FEATURE CANDIDATES", "No universal byte values or make/model support is assumed")
+        UniversalCoding.features.forEach { candidate ->
             val active = candidate.id == selectedId
             Column(Modifier.fillMaxWidth()
                 .background(if (active) Surface2 else Surface, RoundedCornerShape(12.dp))
-                .clickable { selectedId = candidate.id; checked = false }.padding(12.dp)) {
-                Text((if (active) "◉ " else "○ ") + candidate.name,
+                .clickable { selectedId = candidate.id; checked = false; simulation = null }.padding(12.dp)) {
+                Text((if (active) "◉ " else "○ ") + candidate.title,
                     fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text("ECU: " + candidate.controlUnits.joinToString(" / "),
-                    color = Aqua, fontSize = 11.sp)
+                Text(candidate.family + " · candidate only", color = Aqua, fontSize = 11.sp)
                 if (active) {
+                    Spacer(Modifier.height(4.dp))
                     Text(candidate.explanation, color = SubText, fontSize = 12.sp)
-                    Text("Needs: " + candidate.requirements, color = Amber, fontSize = 11.sp)
+                    Text("Possible ECU: " + candidate.moduleHint, color = Amber, fontSize = 11.sp)
+                    Text(candidate.warning, color = Amber, fontSize = 11.sp)
                 }
             }
         }
+
         Panel {
-            Text("CHANGE PREVIEW", fontWeight = FontWeight.Bold, color = Aqua)
-            Text(feature.name, fontWeight = FontWeight.Bold)
-            Text("Desired value:", color = SubText, fontSize = 12.sp)
+            Text("CONFIGURATION DRAFT", color = Aqua, fontWeight = FontWeight.Bold)
+            Text(feature.title, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Requested choice:", color = SubText, fontSize = 12.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                feature.choices.forEach { option ->
+                feature.options.forEach { option ->
                     FilterChip(selected = chosen == option,
-                        onClick = { chosen = option; checked = false },
-                        label = { Text(option, fontSize = 11.sp) })
+                        onClick = { chosen = option; checked = false; simulation = null },
+                        label = { Text(option, fontSize = 12.sp) })
                 }
             }
-            Text("Requested: " + chosen, color = Lime, fontSize = 12.sp)
-            Text("Current coding value: UNKNOWN (no CAFD/NCD backup)",
-                color = SubText, fontSize = 12.sp)
+            Text("Actual ECU value: UNKNOWN", fontSize = 12.sp, color = Amber)
             Spacer(Modifier.height(8.dp))
-            Action("Check coding readiness", Modifier.fillMaxWidth(), primary = true) {
+            Action("Show coding prerequisites", Modifier.fillMaxWidth(), primary = true) {
                 checked = true
             }
             if (checked) {
                 Spacer(Modifier.height(8.dp))
-                Text("BLOCKED: No exact ECU mapping, independently verified write provider, original coding backup, stable supply check or read-back verification.",
-                    color = Amber, fontSize = 12.sp)
+                Text("NO WRITE: Missing independent mapping and safety verification", color = Danger, fontSize = 12.sp)
+                plan.requirements.forEachIndexed { index, item ->
+                    Text("${index + 1}. $item", color = SubText, fontSize = 11.sp)
+                }
+                Spacer(Modifier.height(8.dp))
+                Action("Share configuration plan", Modifier.fillMaxWidth()) {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, plan.safeSummary())
+                    }
+                    context.startActivity(android.content.Intent.createChooser(intent, "Share coding plan"))
+                }
             }
         }
-        InfoCard("HOW REAL CODING WILL WORK",
-            "Identify ECU and software version, read original coding bytes, save a verified backup, calculate a module-specific FDL diff, require parked vehicle and external power, write via the supported Vgate/BMW coding transport, read back, and confirm or restore the original. No generic UDS hex write is offered.")
+
+        Panel {
+            Text("SANDBOX CODING DEMO", fontWeight = FontWeight.Bold, color = Aqua)
+            Text("Applies the requested choice only to synthetic bytes in memory, then verifies a simulated read-back. It never talks to an actual ECU.",
+                fontSize = 12.sp, color = SubText)
+            Spacer(Modifier.height(8.dp))
+            Action("Simulate change (offline only)", Modifier.fillMaxWidth()) {
+                simulation = CodingSandbox.simulate(feature, chosen)
+            }
+            simulation?.let { result ->
+                Text(if (result.verified) "DEMO READ-BACK MATCHED" else "DEMO FAILED",
+                    color = if (result.verified) Lime else Danger, fontSize = 12.sp)
+                Text("Before SHA-256: " + result.beforeHash.take(18) + "…", color = SubText, fontSize = 10.sp)
+                Text("After SHA-256: " + result.afterHash.take(18) + "…", color = SubText, fontSize = 10.sp)
+                Text(result.description, color = Amber, fontSize = 11.sp)
+            }
+        }
+
+        if (selectedMake == "BMW") {
+            SectionTitle("LEGACY BMW F10 REFERENCE", "Preserved from original BMW Forge X; no CAFD coding maps")
+            F10CodingCatalog.features.forEach { candidate ->
+                Column(Modifier.fillMaxWidth().background(
+                    if (candidate.id == bmwSelection) Surface2 else Surface,
+                    RoundedCornerShape(10.dp))
+                    .clickable { bmwSelection = candidate.id }.padding(11.dp)) {
+                    Text(candidate.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    if (candidate.id == bmwSelection) {
+                        Text(candidate.explanation, color = SubText, fontSize = 11.sp)
+                        Text("ECU: " + candidate.controlUnits.joinToString(" / ") +
+                            " · unvalidated mapping", color = Amber, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+        InfoCard("LIVE CODING GATE",
+            "Real vehicle writes require a verified make/model/ECU software map, compatible physical transport, original backup, safe supply and a read-back/restore procedure. " +
+            "The generic SAE OBD-II protocol does not provide these feature definitions. No UDS 0x2E writes or security-access commands are enabled.")
     }
 }
