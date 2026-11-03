@@ -122,16 +122,24 @@ object UniversalCoding {
 
 /** Simulation only. All data are synthetic and no transport or ECU is referenced. */
 data class DemoCodingResult(
-    val beforeHash: String, val afterHash: String, val verified: Boolean, val description: String
+    val beforeHash: String, val afterHash: String, val verified: Boolean,
+    val description: String, val changedBytes: Int = 0
 )
 object CodingSandbox {
     fun simulate(feature: VehicleFeature, selectedValue: String): DemoCodingResult {
-        require(selectedValue in feature.options)
-        val before = "SYNTHETIC-ECU:${feature.id}=${feature.options.first()}".toByteArray(Charsets.UTF_8)
-        val after = "SYNTHETIC-ECU:${feature.id}=$selectedValue".toByteArray(Charsets.UTF_8)
-        val readBack = after.copyOf()
-        return DemoCodingResult(sha256(before), sha256(after),
-            readBack.contentEquals(after), "Synthetic memory changed in an isolated demonstration")
+        require(feature.options.size == 2 && selectedValue in feature.options)
+        val profile = OfflineEcuProfile("synthetic-${feature.id}", "VIRTUAL-ECU",
+            "DEMO-SOFTWARE", 4, listOf(CodingFieldDefinition(feature.id, 2, 0x01,
+                mapOf(feature.options[0] to 0, feature.options[1] to 1))))
+        val original = byteArrayOf(0x55, 0x22,
+            if (selectedValue == feature.options[0]) 1 else 0, 0x44)
+        val preview = OfflineCodingCodec.preview(profile, "DEMO-SOFTWARE", original,
+            mapOf(feature.id to selectedValue))
+        val readBack = preview.proposedBytes.copyOf()
+        return DemoCodingResult(preview.originalDigest, preview.proposedDigest,
+            readBack.contentEquals(preview.proposedBytes),
+            "Synthetic ECU snapshot: ${preview.changes.size} byte(s) modified at fixed validated offset; no hardware attached.",
+            preview.changes.size)
     }
 }
 
