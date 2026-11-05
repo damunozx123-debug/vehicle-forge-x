@@ -1,6 +1,6 @@
-![VEHICLE FORGE X | Ice in Silicon banner](assets/ice-in-silicon/readme-banner.svg)
+![VEHICLE FORGE Android app branding](assets/store/readme-header.svg)
 
-# Vehicle Forge X
+# Vehicle Forge (formerly Vehicle Forge X)
 
 **Free, open-source Android vehicle diagnostics. Multi-brand ECU research and future paid coding support.**
 
