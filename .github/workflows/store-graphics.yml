@@ -1,0 +1,38 @@
+name: Generate Android store graphics
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/store/brand-mark.svg'
+      - 'scripts/generate_store_graphics.py'
+      - 'fastlane/metadata/android/en-US/*.txt'
+      - '.github/workflows/store-graphics.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  graphics:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install rasterisation dependency
+        run: python -m pip install 'CairoSVG==2.8.2'
+      - name: Generate real graphics from original vector marks
+        run: python scripts/generate_store_graphics.py
+      - name: Commit store PNGs (no fake screenshots)
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add fastlane/metadata/android/en-US/images/icon.png fastlane/metadata/android/en-US/images/featureGraphic.png
+          if ! git diff --cached --quiet; then
+            git commit -m "brand: generate store icons and feature graphics [skip ci]"
+            git push origin HEAD:main
+          fi
