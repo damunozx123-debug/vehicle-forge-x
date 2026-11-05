@@ -20,7 +20,7 @@ The script creates a **unique per-repository keystore** under `~/.config/android
 ## Build and sign
 1. Ensure unit/build CI passes and app runs on a real Android device.
 2. Update `versionCode` and `versionName` as appropriate. `versionCode` must increase for each update.
-3. On GitHub, open **Actions → Publish verified signed Android APK → Run workflow**, select branch `main`, and enter tag `v0.3.0-beta.3` only if it exactly matches the current `versionName`.
+3. On GitHub, open **Actions → Publish verified signed Android APK → Run workflow**, select branch `main`, and enter tag `v0.3.1` only if it exactly matches the current `versionName`.
 4. The workflow fails if a key is missing, checks the application ID and version name, verifies the APK signature and ZIP alignment, publishes a SHA256 checksum, and creates a GitHub release with that tag.
 5. Verify the signed APK on an actual supported phone, including installation, update from the previous **release-signed** version, permissions, offline behavior where promised, and export/import behavior.
 
