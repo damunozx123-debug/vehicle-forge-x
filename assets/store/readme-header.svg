@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="350" viewBox="0 0 1280 350" role="img" aria-label="VEHICLE FORGE open-source Android app">
+ <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07121F"/><stop offset="1" stop-color="#13253A"/></linearGradient></defs>
+ <rect width="1280" height="350" rx="25" fill="url(#bg)"/>
+ <path d="M28 27 H1252" stroke="#20DFC5" opacity=".45"/>
+ <rect x="72" y="66" width="218" height="218" rx="55" fill="#0D2234" stroke="#20DFC5" stroke-width="4"/>
+ <path d="M90 245 L163 97 L262 245" stroke="#20DFC5" stroke-width="2" opacity=".4" fill="none"/>
+ <circle cx="181" cy="176" r="82" fill="none" stroke="#20DFC5" stroke-width="2" opacity=".36"/>
+ <text x="181" y="195" font-family="Arial,Helvetica,sans-serif" font-size="64" font-weight="bold" fill="#F5FAFF" text-anchor="middle">VF</text>
+ <text x="355" y="150" font-family="Arial,Helvetica,sans-serif" font-size="55" font-weight="bold" fill="#F5FAFF">VEHICLE FORGE</text>
+ <text x="358" y="200" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#B9CEDD">Read-only OBD-II diagnostics</text>
+ <rect x="358" y="231" width="276" height="42" rx="13" fill="none" stroke="#20DFC5" stroke-width="2"/>
+ <text x="496" y="258" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="bold" fill="#20DFC5">OPEN SOURCE  /  ANDROID</text>
+ <path d="M1100 35 V315 M1134 75 V275 M1171 45 V305 M1204 95 V255" stroke="#20DFC5" stroke-width="2" opacity=".23"/>
+ </svg>
