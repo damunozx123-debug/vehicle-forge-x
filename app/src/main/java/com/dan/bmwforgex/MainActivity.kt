@@ -95,7 +95,7 @@ private fun ForgeApp(vm: ForgeViewModel, export: () -> Unit) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("VEHICLE FORGE", fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 1.8.sp)
-                Text("X  /  MULTI-BRAND DIAGNOSTICS", fontSize = 10.sp, color = Aqua, letterSpacing = 1.7.sp)
+                Text("OBD-II  /  MULTI-BRAND DIAGNOSTICS", fontSize = 10.sp, color = Aqua, letterSpacing = 1.7.sp)
             }
             StatusPill(if (ui.simulator && ui.connected) "SIMULATOR" else ui.state.uppercase(),
                 if (!ui.connected) SubText else if (ui.simulator) Amber else Lime)

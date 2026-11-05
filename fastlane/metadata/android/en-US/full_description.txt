@@ -1,0 +1,17 @@
+Vehicle Forge is a free, open-source Android vehicle diagnostic app.
+Read generic SAE OBD-II trouble codes, explore live sensor readings and export privacy-conscious reports with a compatible Bluetooth Classic ELM327 reader. Use the built-in simulator without a car or adapter.
+
+Features:
+• Read-only fault code retrieval and basic live data
+• Offline code explanations and saved CSV reports
+• Bluetooth ELM327/Vgate support where compatible
+• Safe synthetic diagnostic and coding simulations
+
+Limitations:
+• Not all vehicles, ECUs or adapters are compatible.
+• ECU coding, flashing and security access are not implemented.
+• No guaranteed fault diagnosis or repair outcome.
+• Work on parked vehicles you own or are authorised to diagnose.
+
+No advertising, tracking or account requirement.
+Source code: https://github.com/damunozx123-debug/vehicle-forge-x

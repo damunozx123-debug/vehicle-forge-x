@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
-    <application android:label="Vehicle Forge X" android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@android:style/Theme.Material.NoActionBar" android:supportsRtl="true">
+    <application android:label="Vehicle Forge" android:icon="@drawable/ic_brand_logo" android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@android:style/Theme.Material.NoActionBar" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
