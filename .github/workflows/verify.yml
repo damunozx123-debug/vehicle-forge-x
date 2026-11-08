@@ -34,6 +34,8 @@ jobs:
             https://github.com/JetBrains/kotlin/releases/download/v2.3.21/kotlin-compiler-2.3.21.zip
           unzip -q kotlin.zip -d "$RUNNER_TEMP/kotlin-cli"
           echo "$RUNNER_TEMP/kotlin-cli/kotlinc/bin" >> "$GITHUB_PATH"
+      - name: Validate release helper shell syntax
+        run: bash -n scripts/setup-release-signing.sh scripts/backup-and-verify-signing-keys.sh scripts/download-verify-signed-candidates.sh
       - name: Execute isolated protocol tests
         run: ./TEST_CORE.sh
 
