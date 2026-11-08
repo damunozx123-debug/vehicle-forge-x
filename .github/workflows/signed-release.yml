@@ -1,93 +1,169 @@
-name: Publish verified signed Android APK
+name: Signed Android verification and release
+
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/signed-release.yml'
   workflow_dispatch:
     inputs:
       version_tag:
-        description: "Tag must match Android versionName, prefixed v (e.g. v1.0.0)"
+        description: "Exact app versionName prefixed with v (e.g. v0.3.1)"
         required: true
         type: string
+      backup_confirmed:
+        description: "I securely backed up the original signing keystore AND its password off-device"
+        required: true
+        type: boolean
+        default: false
+      device_tested:
+        description: "I installed and tested the signed verification APK on a physical Android device"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: signed-android-release
   cancel-in-progress: false
 
 jobs:
-  signed-release:
-    # Manual dispatch from the trusted default branch only.
+  build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      TAG: ${{ inputs.version_tag }}
-      KEYSTORE_B64: ${{ secrets.ANDROID_SIGNING_KEY_BASE64 }}
-      STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      KEYPASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      KEYALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Fail closed if signing secrets or trusted release tag missing
+      - name: Install Android SDK
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$TAG" =~ ^v[0-9][0-9A-Za-z.+-]*$ ]] || { echo "Invalid version_tag"; exit 1; }
-          for item in KEYSTORE_B64 STOREPASS KEYPASS KEYALIAS; do
-            [[ -n "${!item}" ]] || { echo "Missing required secret: $item"; exit 1; }
-          done
-          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            echo "Refusing to overwrite an existing signed release."
-            exit 1
-          fi
-      - name: Install required Android SDK and signing tools
-        shell: bash
-        run: |
-          set -euo pipefail
-          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          SDKROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$SDKROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" --install 'platforms;android-37.0' 'build-tools;36.0.0'
-      - name: Test and assemble unsigned release
+      - name: Test and assemble unsigned release (no signing secrets available)
         shell: bash
         working-directory: .
         run: ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleRelease --stacktrace
-      - name: Zipalign, sign, verify and package
+      - name: Confirm unsigned artifact exists
+        shell: bash
+        run: |
+          test -s 'app/build/outputs/apk/release/app-release-unsigned.apk' || { echo 'Expected unsigned APK not found'; exit 1; }
+      - name: Upload unsigned artifact for isolated signing job
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-release-apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  sign:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.event_name == 'push' && 'v0.3.1' || inputs.version_tag }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Require explicit backup and real-device acceptance for PUBLIC release
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BACKUP: ${{ inputs.backup_confirmed }}
+          DEVICE: ${{ inputs.device_tested }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" == 'v0.3.1' ]] || { echo 'Tag must equal the reviewed application version'; exit 1; }
+          if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+            [[ "$BACKUP" == true ]] || { echo 'Off-device signing key backup is required'; exit 1; }
+            [[ "$DEVICE" == true ]] || { echo 'Real-device verification of the signed candidate is required'; exit 1; }
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: unsigned-release-apk
+          path: unsigned
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android APK signing tools
         shell: bash
         run: |
           set -euo pipefail
+          SDKROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$SDKROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install 'build-tools;36.0.0'
+      - name: Isolated APK signing and identity verification
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_SIGNING_KEY_BASE64 }}
+          STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYPASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          for secret in KEYSTORE_B64 STOREPASS KEYPASS KEYALIAS; do
+            [[ -n "${!secret}" ]] || { echo "Missing signing secret: $secret"; exit 1; }
+          done
           BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0"
-          APK="app/build/outputs/apk/release/app-release-unsigned.apk"
-          test -s "$APK" || { echo "Unsigned release artifact missing"; exit 1; }
-          install -d -m 700 "$RUNNER_TEMP/android-sign" dist
-          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/android-sign/signing.p12"
-          chmod 600 "$RUNNER_TEMP/android-sign/signing.p12"
-          "$BT/zipalign" -f -p 4 "$APK" "$RUNNER_TEMP/android-sign/aligned.apk"
-          "$BT/apksigner" sign \
-            --ks "$RUNNER_TEMP/android-sign/signing.p12" \
-            --ks-key-alias "$KEYALIAS" \
+          APK="$(find unsigned -type f -name 'app-release-unsigned.apk' -print -quit)"
+          test -n "$APK" && test -s "$APK" || { echo 'Unsigned artifact missing'; exit 1; }
+          install -d -m 700 "$RUNNER_TEMP/sign-work"
+          mkdir -p dist
+          trap 'rm -f "$RUNNER_TEMP/sign-work/release.p12"' EXIT
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/sign-work/release.p12"
+          chmod 600 "$RUNNER_TEMP/sign-work/release.p12"
+          "$BT/zipalign" -f -p 4 "$APK" "$RUNNER_TEMP/sign-work/aligned.apk"
+          "$BT/apksigner" sign --ks-type PKCS12 \
+            --ks "$RUNNER_TEMP/sign-work/release.p12" --ks-key-alias "$KEYALIAS" \
             --ks-pass env:STOREPASS --key-pass env:KEYPASS \
-            --out "dist/vehicle-forge.apk" "$RUNNER_TEMP/android-sign/aligned.apk"
-          "$BT/apksigner" verify --verbose --print-certs "dist/vehicle-forge.apk"
+            --out "dist/vehicle-forge.apk" "$RUNNER_TEMP/sign-work/aligned.apk"
+          "$BT/apksigner" verify --verbose --print-certs "dist/vehicle-forge.apk" | tee dist/SIGNING_CERTIFICATE.txt
           "$BT/zipalign" -c -v 4 "dist/vehicle-forge.apk"
-          PACKAGE="$("$BT/aapt" dump badging "dist/vehicle-forge.apk" | grep '^package:')"
-          echo "$PACKAGE"
-          [[ "$PACKAGE" == *"name='com.dan.bmwforgex'"* ]] || { echo 'Wrong package ID'; exit 1; }
-          [[ "$PACKAGE" == *"versionName='${TAG#v}'"* ]] || { echo 'Version tag does not match APK'; exit 1; }
+          PKG="$("$BT/aapt" dump badging "dist/vehicle-forge.apk" | grep '^package:')"
+          echo "$PKG"
+          [[ "$PKG" == *"name='com.dan.bmwforgex'"* ]] || { echo 'Wrong package ID'; exit 1; }
+          [[ "$PKG" == *"versionName='${TAG#v}'"* ]] || { echo 'Version mismatch'; exit 1; }
+          [[ "$PKG" == *"versionCode='6'"* ]] || { echo 'Version code mismatch'; exit 1; }
           (cd dist && sha256sum 'vehicle-forge.apk' > SHA256SUMS.txt)
-          rm -f "$RUNNER_TEMP/android-sign/signing.p12"
-      - name: Publish immutable signed release
+      - name: Upload signed APK for device verification (not public release)
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vehicle-forge-signed-verification
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Publish signed GitHub release after explicit acceptance
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release create "$TAG" 'dist/vehicle-forge.apk' dist/SHA256SUMS.txt \
-            --repo "$GH_REPO" --target "$GITHUB_SHA" \
-            --title "Vehicle Forge $TAG" \
-            --notes "Developer-signed Android APK built from this tagged source commit. Verify the APK signing certificate and SHA256 before deploying to an F-Droid-compatible index. Source and software limitations are documented in the repository."
-          echo "Signed artifact published: $TAG" >> "$GITHUB_STEP_SUMMARY"
+          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo 'Release tag already used; refusing overwrite'
+            exit 1
+          fi
+          gh release create "$TAG" dist/vehicle-forge.apk dist/SHA256SUMS.txt \
+            dist/SIGNING_CERTIFICATE.txt --repo "$GH_REPO" --target "$GITHUB_SHA" \
+            --title 'Vehicle Forge TAG' \
+            --notes 'First developer-signed Android release. SHA256 and signing certificate available as assets. No claim of F-Droid/Neo Store inclusion.'
+          echo "Published signed release $TAG" >> "$GITHUB_STEP_SUMMARY"
