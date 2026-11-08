@@ -20,6 +20,17 @@ bash scripts/backup-and-verify-signing-keys.sh
 It validates all four local PKCS12 keystores, prompts for a separate archive password, creates an AES-256-CBC/PBKDF2 encrypted backup, decrypts it to verify archive integrity, and creates a SHA-256 checksum. Securely copy the encrypted archive **and its checksum** off the device and preserve the password separately. Do not upload raw keystores or password files to any Git repository.
 
 ## Step 2. Download and test a signed APK candidate
+
+You can verify all four currently available signed test candidates against the **original local keystores** in one command:
+
+```bash
+cd ~/vehicle-forge-x
+git pull --ff-only
+bash scripts/download-verify-signed-candidates.sh
+```
+
+This downloads artifacts, checks SHA256 files, extracts signer SHA256 fingerprints and compares each to the original PKCS12 keystore. It refuses stale or missing artifacts and signature mismatches. It does **not** install, publish or upload private signing files.
+
 Use GitHub **Actions → Signed Android verification and release**, choose the successful `push` run on `main`, download the `*-signed-verification` artifact, and extract it.
 
 Verify `SHA256SUMS.txt` and `SIGNING_CERTIFICATE.txt`, then test `vehicle-forge.apk` on a real Android phone. At minimum check installation, launching, permissions, the main workflow and crashes; on upgrade tests use the same signing certificate. Do not confuse existing debug-signed previews with the new permanent-release identity.
