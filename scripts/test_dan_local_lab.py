@@ -19,6 +19,11 @@ class LabSafetyTests(unittest.TestCase):
         self.assertFalse(lab.allowed_patch_path("app/src/main/java/com/dan/bmwforgex/data/Transport.kt"))
         self.assertFalse(lab.allowed_patch_path("../README.md"))
 
+    def test_debug_package_isolated_from_release(self):
+        self.assertEqual(lab.PACKAGE, "com.dan.bmwforgex.dev")
+        self.assertEqual(lab.ACTIVITY,
+                         "com.dan.bmwforgex.dev/com.dan.bmwforgex.MainActivity")
+
     def test_patch_parsing(self):
         patch = "analysis\ndiff --git a/core_smoke_test.kt b/core_smoke_test.kt\n--- a/core_smoke_test.kt\n+++ b/core_smoke_test.kt\n@@ -1 +1 @@\n-old\n+new\n"
         self.assertTrue(lab.extract_patch(patch).startswith("diff --git a/core_smoke_test.kt"))
