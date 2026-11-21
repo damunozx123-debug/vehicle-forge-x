@@ -17,6 +17,17 @@ class DiagnosticExportTest {
         assertFalse(report.contains("JTDBR32E"))
     }
 
+    @Test fun reportIncludesOnlyKnownFiniteSensorContext() {
+        val report = DiagnosticExport.summary(emptyMap(), null, false, 0,
+            mapOf(0x0C to 1726.0, 0x05 to 83.0, 0xFF to 9999.0,
+                0x42 to Double.NaN))
+        assertTrue(report.contains("Engine RPM: 1726 rpm"))
+        assertTrue(report.contains("Coolant: 83.0 °C"))
+        assertTrue(report.contains("NOT fault-time freeze frame"))
+        assertFalse(report.contains("9999"))
+        assertFalse(report.contains("NaN"))
+    }
+
     @Test fun demoReportIsClearlySynthetic() {
         assertTrue(DiagnosticExport.summary(emptyMap(), null, true, 0)
             .contains("SYNTHETIC DEMO - NOT VEHICLE DATA"))
