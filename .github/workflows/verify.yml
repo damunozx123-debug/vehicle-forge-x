@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'app/**'
+      - 'scripts/**'
       - '*.kt'
       - '*.sh'
       - '*.kts'
@@ -38,6 +39,8 @@ jobs:
         run: bash -n scripts/setup-release-signing.sh scripts/backup-and-verify-signing-keys.sh scripts/download-verify-signed-candidates.sh
       - name: Execute isolated protocol tests
         run: ./TEST_CORE.sh
+      - name: Offline local AI harness safety tests
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
 
   android-debug:
     name: Android debug build and unit tests
