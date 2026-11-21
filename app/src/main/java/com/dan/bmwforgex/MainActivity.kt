@@ -428,7 +428,8 @@ private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel, saveReport: (String)
             Action("Share privacy-safe fault report", Modifier.fillMaxWidth(),
                 enabled = ui.connected && !ui.busy) {
                 val report = DiagnosticExport.summary(ui.dtcs, ui.readiness,
-                    ui.simulator, System.currentTimeMillis())
+                    ui.simulator, System.currentTimeMillis(),
+                    ui.readings.mapValues { it.value.value })
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                     type = "text/plain"
                     putExtra(android.content.Intent.EXTRA_TEXT, report)
@@ -438,7 +439,8 @@ private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel, saveReport: (String)
             Action("Save report for local AI (no identifiers)", Modifier.fillMaxWidth(),
                 enabled = ui.connected && !ui.busy) {
                 saveReport(DiagnosticExport.summary(ui.dtcs, ui.readiness,
-                    ui.simulator, System.currentTimeMillis()))
+                    ui.simulator, System.currentTimeMillis(),
+                    ui.readings.mapValues { it.value.value }))
             }
             Text("Free forever. The export excludes VIN, plate number and adapter address.",
                 fontSize = 11.sp, color = SubText)
