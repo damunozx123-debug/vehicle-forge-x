@@ -70,6 +70,24 @@ class MainActivity : ComponentActivity() {
             pendingCsv = ""
         }
     }
+    private var pendingDiagnosticReport = ""
+    private val saveDiagnosticReport =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+            val report = pendingDiagnosticReport
+            pendingDiagnosticReport = ""
+            if (uri != null) {
+                val saved = runCatching {
+                    requireNotNull(contentResolver.openOutputStream(uri)) {
+                        "Cannot open diagnostic report destination"
+                    }.use { it.write(report.toByteArray(Charsets.UTF_8)) }
+                }
+                android.widget.Toast.makeText(this,
+                    if (saved.isSuccess) "Privacy-safe diagnostic report saved"
+                    else "Report export failed: ${saved.exceptionOrNull()?.message}",
+                    android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         model = ViewModelProvider(this)[ForgeViewModel::class.java]
@@ -78,17 +96,24 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(primary = Aqua, secondary = Lime,
                 background = Background, surface = Surface, onSurface = TextMain, onBackground = TextMain)) {
-                ForgeApp(model) {
-                    pendingCsv = model.csv()
-                    saveCsv.launch("vehicle-forge-${SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())}.csv")
-                }
+                ForgeApp(
+                    model,
+                    export = {
+                        pendingCsv = model.csv()
+                        saveCsv.launch("vehicle-forge-${SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())}.csv")
+                    },
+                    saveReport = { report ->
+                        pendingDiagnosticReport = report
+                        saveDiagnosticReport.launch("vehicle-forge-diagnostic.txt")
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ForgeApp(vm: ForgeViewModel, export: () -> Unit) {
+private fun ForgeApp(vm: ForgeViewModel, export: () -> Unit, saveReport: (String) -> Unit) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var tab by remember { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize().background(Background)) {
@@ -104,7 +129,7 @@ private fun ForgeApp(vm: ForgeViewModel, export: () -> Unit) {
         Box(Modifier.weight(1f)) {
             when (tab) {
                 0 -> Dashboard(ui, vm, export)
-                1 -> Diagnostics(ui, vm)
+                1 -> Diagnostics(ui, vm, saveReport)
                 2 -> Garage(ui, vm)
                 3 -> CodingWorkspace(ui)
                 else -> Engineering(ui, vm)
@@ -305,7 +330,7 @@ private fun Sparkline(numbers: List<Double>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel) {
+private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel, saveReport: (String) -> Unit) {
     val context = LocalContext.current
     var beforeText by remember { mutableStateOf("") }
     var reportText by remember { mutableStateOf("") }
@@ -409,6 +434,11 @@ private fun Diagnostics(ui: ForgeState, vm: ForgeViewModel) {
                     putExtra(android.content.Intent.EXTRA_TEXT, report)
                 }
                 context.startActivity(android.content.Intent.createChooser(intent, "Share diagnostic report"))
+            }
+            Action("Save report for local AI (no identifiers)", Modifier.fillMaxWidth(),
+                enabled = ui.connected && !ui.busy) {
+                saveReport(DiagnosticExport.summary(ui.dtcs, ui.readiness,
+                    ui.simulator, System.currentTimeMillis()))
             }
             Text("Free forever. The export excludes VIN, plate number and adapter address.",
                 fontSize = 11.sp, color = SubText)
