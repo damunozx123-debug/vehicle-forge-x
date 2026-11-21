@@ -108,9 +108,25 @@ class ForgeViewModel(app: Application) : AndroidViewModel(app) {
                     if (base + 0x20 !in capabilities) break
                 }
                 _ui.update { it.copy(supported = capabilities, notice = "${capabilities.size} SAE PIDs advertised by ECU") }
-                val vin = ObdCore.vin(runCommand("0902"))
+                // Optional Mode 09 VIN and fault reads must not take down a valid
+                // live PID connection when an adapter/ECU times out on them.
+                val vin = try {
+                    ObdCore.vin(runCommand("0902"))
+                } catch (c: CancellationException) {
+                    throw c
+                } catch (_: Exception) {
+                    null
+                }
                 if (vin != null) _ui.update { it.copy(vin = vin) }
-                scanCodesInternal()
+                try {
+                    scanCodesInternal()
+                } catch (c: CancellationException) {
+                    throw c
+                } catch (e: Exception) {
+                    _ui.update {
+                        it.copy(notice = "Connected; optional fault scan unavailable: ${e.message?.take(100)}")
+                    }
+                }
                 _ui.update { it.copy(busy = false) }
                 pollingCycle = 0
                 startPolling()

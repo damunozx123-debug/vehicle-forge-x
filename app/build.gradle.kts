@@ -12,6 +12,13 @@ android {
         versionCode = 6
         versionName = "0.3.1"
     }
+    // Debug builds install beside the published app, avoiding signing-key conflicts.
+    // Release/application ID remains com.dan.bmwforgex.
+    buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".dev"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
