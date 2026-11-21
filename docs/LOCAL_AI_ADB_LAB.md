@@ -21,7 +21,7 @@ The script never downloads an AI model or contacts a cloud AI API. If a differen
 
     python3 scripts/dan_local_lab.py test --adb --review
 
-Runs TEST_CORE.sh, Gradle unit tests and debug APK assembly. Installs the debug APK using adb install -r, launches the app, verifies a running process and saves process-specific logs. If APK signatures differ, installation stops rather than uninstalling or resetting the app.
+Runs TEST_CORE.sh, Gradle unit tests and debug APK assembly. Installs the debug APK as **com.dan.bmwforgex.dev** using adb install -r, launches its **com.dan.bmwforgex.MainActivity** component, verifies a running process and saves process-specific logs. Release builds still use **com.dan.bmwforgex**. Both can coexist without conflicting signatures. If an older dev build has an incompatible signature, installation stops rather than uninstalling or resetting data.
 
 Use --serial DEVICE if multiple devices are connected. Without --adb, only desktop tests run. --review asks Ollama to assess results even when passing.
 
