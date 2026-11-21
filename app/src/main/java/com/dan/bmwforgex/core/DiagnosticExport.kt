@@ -13,7 +13,8 @@ object DiagnosticExport {
         codes: Map<String, List<String>>,
         readiness: Readiness?,
         simulator: Boolean,
-        recordedAtMs: Long
+        recordedAtMs: Long,
+        readings: Map<Int, Double> = emptyMap()
     ): String = buildString {
         appendLine("VEHICLE FORGE X - GENERIC OBD-II FAULT REPORT")
         appendLine(if (simulator) "SOURCE: SYNTHETIC DEMO - NOT VEHICLE DATA" else "SOURCE: OBD-II ENGINE/EMISSIONS SESSION")
@@ -25,6 +26,19 @@ object DiagnosticExport {
             appendLine("MIL: ${if (readiness.mil) "ON" else "OFF"}")
             appendLine("ECU-reported DTC count: ${readiness.storedCount}")
             appendLine("Incomplete monitor flags: ${readiness.continuousIncomplete}/${readiness.noncontinuousIncomplete}")
+        }
+        // Optional, known SAE sensor values provide context for local diagnosis.
+        // These are sequential latest observations, not freeze-frame readings.
+        val safeSamples = readings.entries.filter { (pid, value) ->
+            Sensors.byPid.containsKey(pid) && value.isFinite()
+        }.sortedBy { it.key }.take(24)
+        if (safeSamples.isNotEmpty()) {
+            appendLine("Last observed SAE PIDs (sequential, NOT fault-time freeze frame; age unknown):")
+            safeSamples.forEach { (pid, value) ->
+                val sensor = Sensors.byPid.getValue(pid)
+                appendLine("  0x%02X | %s: %s %s".format(Locale.ROOT,
+                    pid, sensor.label, Sensors.format(value), sensor.unit))
+            }
         }
         groups.forEach { group ->
             val entries = codes[group].orEmpty().map { it.uppercase(Locale.ROOT) }
