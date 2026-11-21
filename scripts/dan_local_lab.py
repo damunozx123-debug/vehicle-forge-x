@@ -180,7 +180,18 @@ def auto_fix(patch: str, folder: Path) -> bool:
         run(["git", "apply", "-R", str(patch_file)])
         print("Auto-fix reverted: core regression tests failed")
         return False
-    print("Auto-fix passed core tests; UNCOMMITTED worktree diff requires human review")
+    android, androidlog = run(
+        ["./gradlew", "--no-daemon", "--console=plain", "testDebugUnitTest", "assembleDebug"],
+        timeout=900)
+    private_write(folder, "post_fix_android.txt", androidlog[-40000:])
+    if android:
+        code, msg = run(["git", "apply", "-R", str(patch_file)])
+        if code:
+            print("WARNING: Android tests failed and automatic rollback failed; inspect git diff")
+        else:
+            print("Auto-fix reverted: Android unit tests or debug build failed")
+        return False
+    print("Auto-fix passed core + Android tests; UNCOMMITTED worktree diff requires human review")
     return True
 
 
@@ -205,7 +216,9 @@ def test_mode(args: argparse.Namespace) -> int:
         except RuntimeError as exc:
             failed.append(("adb", str(exc)))
             print(exc)
-    if failed or args.review:
+    # Infrastructure-only ADB failures are not code faults for an LLM to patch.
+    actionable_failure = any(title != "adb" for title, _ in failed)
+    if actionable_failure or args.review:
         selected = "\n\n".join(title + ": " + log for title, log in failed)
         if not selected:
             selected = "Tests passed. Identify untested risks and new tests worth adding."
@@ -227,7 +240,7 @@ def test_mode(args: argparse.Namespace) -> int:
         reply = ollama(args.model, prompt)
         ai_path = private_write(folder, "local_ai_review.txt", reply)
         print("Local AI review:", ai_path)
-        if args.auto_fix and failed and not reply.startswith("LOCAL_MODEL_UNAVAILABLE"):
+        if args.auto_fix and actionable_failure and not reply.startswith("LOCAL_MODEL_UNAVAILABLE"):
             auto_fix(extract_patch(reply), folder)
     print("Evidence:", folder)
     return 1 if failed else 0
