@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -55,6 +56,8 @@ private val Lime = Color(0xFF99E6BB)
 private val Amber = Color(0xFFFFC57E)
 private val Danger = Color(0xFFFF8790)
 
+private const val PENDING_REPORT_STATE_KEY = "vehicle_forge.pending_diagnostic_report"
+
 class MainActivity : ComponentActivity() {
     private lateinit var model: ForgeViewModel
     private var pendingCsv = ""
@@ -76,7 +79,10 @@ class MainActivity : ComponentActivity() {
             val report = pendingDiagnosticReport
             pendingDiagnosticReport = ""
             if (uri != null) {
-                val saved = runCatching {
+                // Activity recreation during the system picker must not silently write an empty report.
+                val saved = if (report.isBlank()) {
+                    Result.failure(IllegalStateException("Report unavailable; return to Faults and save again"))
+                } else runCatching {
                     requireNotNull(contentResolver.openOutputStream(uri)) {
                         "Cannot open diagnostic report destination"
                     }.use { it.write(report.toByteArray(Charsets.UTF_8)) }
@@ -90,6 +96,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingDiagnosticReport = savedInstanceState?.getString(PENDING_REPORT_STATE_KEY).orEmpty()
         model = ViewModelProvider(this)[ForgeViewModel::class.java]
         window.statusBarColor = android.graphics.Color.rgb(7, 17, 29)
         window.navigationBarColor = android.graphics.Color.rgb(7, 17, 29)
@@ -110,12 +117,19 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        // Keep the generic report if Android recreates us while the picker is open.
+        // Do not put potentially large CSV recordings into the saved-state Bundle.
+        outState.putString(PENDING_REPORT_STATE_KEY, pendingDiagnosticReport)
+        super.onSaveInstanceState(outState)
+    }
 }
 
 @Composable
 private fun ForgeApp(vm: ForgeViewModel, export: () -> Unit, saveReport: (String) -> Unit) {
     val ui by vm.ui.collectAsStateWithLifecycle()
-    var tab by remember { mutableIntStateOf(0) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize().background(Background)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
